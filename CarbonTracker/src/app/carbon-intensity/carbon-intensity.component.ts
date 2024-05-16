@@ -58,7 +58,7 @@ export class CarbonIntensityComponent implements OnInit {
       },
       dataZoom: [
         {
-          startValue: '2024-05-09 19:00:00'
+          startValue: this.dateDebString
         },
         {
           type: 'inside'
@@ -70,22 +70,22 @@ export class CarbonIntensityComponent implements OnInit {
         pieces: [
           {
             gt: 0,
-            lte: 15,
+            lt: 15,
             color: '#93CE07'
           },
           {
             gt: 15,
-            lte: 25,
+            lt: 25,
             color: '#FBDB0F'
           },
           {
             gt: 25,
-            lte: 35,
+            lt: 35,
             color: '#FC7D02'
           },
           {
             gt: 35,
-            lte: 45,
+            lt: 45,
             color: '#FD0100'
           },
           {
@@ -115,10 +115,95 @@ export class CarbonIntensityComponent implements OnInit {
         let data = JSON.parse(event.data);
         if(data[data.length-1].clef == this.global.clef){
           this.global.dataJson = [];
-          for(let pointeur = 0; pointeur< data.length-1; pointeur++){
-            this.global.dataJson.push([data[pointeur].DATE, data[pointeur].CARBONINTENSITY])
+          if(data[data.length-1].frequence == 1){
+            for(let pointeur = 0; pointeur< data.length-1; pointeur++){
+              this.global.dataJson.push([data[pointeur].DATE, data[pointeur].CARBONINTENSITY])
+            }
           }
-          var option={
+          else{
+            if(data[data.length-1].frequence == 2){
+              for(let pointeur: number = 0; pointeur< data.length-1; pointeur++){
+                let datePointeur: string = data[pointeur].DATE.split(" ");
+                let hourTab: string[] = datePointeur[1].split(":");
+                let thisHour: number = +hourTab[0]
+                if(thisHour%2==0){
+                  this.global.dataJson.push([data[pointeur].DATE, data[pointeur].CARBONINTENSITY])
+                }
+              }
+            }
+            else{
+              for(let pointeur = 0; pointeur< data.length-1; pointeur++){
+                let datePointeur: string = data[pointeur].DATE.split(" ");
+                let hourTab: string[] = datePointeur[1].split(":");
+                let thisHour: number = +hourTab[0]
+                if(thisHour%3==0){
+                  this.global.dataJson.push([data[pointeur].DATE, data[pointeur].CARBONINTENSITY])
+                }
+              }
+            }
+          }
+
+          var option= {
+            tooltip: {
+              trigger: 'axis'
+            },
+            xAxis: {
+              type: 'category'
+            },
+            yAxis: {
+              type: 'value'
+            },
+            toolbox: {
+              right: 10,
+              feature: {
+                dataZoom: {
+                  yAxisIndex: 'none'
+                },
+                restore: {},
+                saveAsImage: {}
+              }
+            },
+            dataZoom: [
+              {
+                startValue: this.dateDebString
+              },
+              {
+                type: 'inside'
+              }
+            ],
+            visualMap: {
+              top: 50,
+              right: 10,
+              pieces: [
+                {
+                  gt: 0,
+                  lt: 15,
+                  color: '#93CE07'
+                },
+                {
+                  gt: 15,
+                  lt: 25,
+                  color: '#FBDB0F'
+                },
+                {
+                  gt: 25,
+                  lt: 35,
+                  color: '#FC7D02'
+                },
+                {
+                  gt: 35,
+                  lt: 45,
+                  color: '#FD0100'
+                },
+                {
+                  gt: 45,
+                  color: '#AA069F'
+                }
+              ],
+              outOfRange: {
+                color: '#999'
+              }
+            },
             series: [
               {
                 data: this.global.dataJson,
@@ -126,7 +211,7 @@ export class CarbonIntensityComponent implements OnInit {
                 smooth: true
               }
             ]
-          }
+          };
           option && myChart.setOption(option);
         }
       }
@@ -136,5 +221,21 @@ export class CarbonIntensityComponent implements OnInit {
 
   search() {
     console.log("Recherche: "+ this.range.value.start);
+    if (this.global.wsCarbonHistory.readyState == WebSocket.OPEN && this.global.ws2CarbonHistory.readyState == WebSocket.OPEN) {
+      if(this.range.value.start == null || this.range.value.end == null){
+        this.global.wsCarbonHistory.send(this.citySelected+','+this.hourSelected+','+' , ,' + this.global.clef)
+      }
+      else{
+        let startSplit: string[] = this.range.value.start.toLocaleString().split(" ");
+        let startDateSplit: string[]= startSplit[0].split("/");
+        let sendStart: string = startDateSplit[2] +"-"+startDateSplit[1]+"-"+startDateSplit[0];
+        let endSplit: string[] = this.range.value.end.toLocaleString().split(" ");
+        let endDateSplit: string[]= endSplit[0].split("/");
+        let sendEnd: string = endDateSplit[2] +"-"+endDateSplit[1]+"-"+endDateSplit[0];
+        console.log("deb: "+sendStart+" 00:00:00     end: "+sendEnd+" 24:00:00")
+        this.global.wsCarbonHistory.send(this.citySelected+','+this.hourSelected+','+sendStart+' 00:00:00,'+sendEnd+' 24:00:00,' + this.global.clef)
+      }
+      console.log("demande carbon");
+    }
   }
 }
