@@ -1,0 +1,3083 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0"
+           xmlns:camel="http://camel.apache.org/schema/blueprint"
+           xsi:schemaLocation="
+         http://www.osgi.org/xmlns/blueprint/v1.0.0 https://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+         http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint.xsd
+         http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0 http://aries.apache.org/schemas/blueprint-cm/blueprint-cm-1.1.0.xsd">
+
+    <camelContext id="CarbonKarafContext" xmlns="http://camel.apache.org/schema/blueprint">
+
+        <!--
+            Amiens: 49.90 - 2.3
+            Paris: 48.8566 - 2.3522
+            Lille: 50.6365654 - 3.0635282
+            Rouen: 49.44 - 1.09
+            Dijon: 47.3215806 - 5.0414701
+            Bordeaux: 44.841225 - -0.5800364
+            Toulouse: 43.6044622 - 1.4442469
+            Lyon: 45.7578137 - 4.8320114
+            Strasbourg: 48.584614 - 7.7507127
+            Ajaccio: 41.9263991 - 8.7376029
+            Marseille: 43.2961743 - 5.3699525
+            Rennes: 48.1113387 - -1.6800198
+            Orléans: 47.9027336 - 1.9086066
+            Nantes: 47.2186371 - -1.5541362
+            New York: 40.7127281 - -74.0060152
+        -->
+
+        <route id="CarbonHistory">
+            <from uri="websocket://0.0.0.0:9290/wsCarbonHistory?maxIdleTime=0"/>
+            <setHeader name="websocket"><simple>${body}</simple></setHeader>
+
+            <script>
+                <groovy>
+                    def Table = headers.websocket.split(',')
+
+                    request.headers.ville = Table[0]
+                    request.headers.frequence = Table[1]
+                    request.headers.dateDeb = Table[2]
+                    request.headers.dateFin = Table[3]
+                    request.headers.clef = Table[4]
+                </groovy>
+            </script>
+
+            <choice>
+                <when>
+                    <simple>${header.dateDeb} == " "</simple>
+                    <log message="sans dateDeb= ${header.dateDeb}."/>
+                    <to uri="sql:SELECT * FROM CARBONINTENSITYHISTORY WHERE CITY = :#ville ORDER BY DATETEXTE?dataSource=ds_L1db"/>
+                </when>
+                <otherwise>
+                    <log message="avec dateDeb= ${header.dateDeb}."/>
+                    <to uri="sql:SELECT * FROM CARBONINTENSITYHISTORY WHERE CITY = :#ville AND DATETEXTE &gt; :#dateDeb AND DATETEXTE &lt; :#dateFin ORDER BY DATETEXTE?dataSource=ds_L1db"/>
+                </otherwise>
+            </choice>
+
+            <setHeader name="chaine"><simple>[</simple></setHeader>
+
+            <loop>
+                <simple>${body.size()}</simple>
+
+                <setHeader name="rowCount"><simple>${header.CamelLoopIndex}</simple></setHeader>
+
+                <choice>
+                    <when>
+                        <simple>${header.rowCount} == 0</simple>
+
+                        <setHeader name="DATE"><simple>${body.get(${header.rowCount}).get('DATETEXTE')}</simple></setHeader>
+                        <setHeader name="CARBONINTENSITY"><simple resultType="java.lang.Float">${body.get(${header.rowCount}).get('CARBONINTENSITY')}</simple></setHeader>
+                        <setHeader name="CITY"><simple>${body.get(${header.rowCount}).get('CITY')}</simple></setHeader>
+
+                        <setHeader name="chaine"><simple>${header.chaine}{"DATE":"${header.DATE}","CARBONINTENSITY":${header.CARBONINTENSITY},"CITY":"${header.CITY}"}</simple></setHeader>
+                    </when>
+                    <otherwise>
+                        <setHeader name="DATE"><simple>${body.get(${header.rowCount}).get('DATETEXTE')}</simple></setHeader>
+                        <setHeader name="CARBONINTENSITY"><simple>${body.get(${header.rowCount}).get('CARBONINTENSITY')}</simple></setHeader>
+                        <setHeader name="CITY"><simple>${body.get(${header.rowCount}).get('CITY')}</simple></setHeader>
+
+                        <setHeader name="chaine"><simple>${header.chaine},{"DATE":"${header.DATE}","CARBONINTENSITY":${header.CARBONINTENSITY},"CITY":"${header.CITY}"}</simple></setHeader>
+                    </otherwise>
+                </choice>
+            </loop>
+
+            <setHeader name="chaine"><simple>${header.chaine},{"clef":"${header.clef}","frequence":${header.frequence}}]</simple></setHeader>
+            <setBody><simple>${header.chaine}</simple></setBody>
+
+            <to uri="websocket://0.0.0.0:9290/ws2CarbonHistory?sendToAll=true"/>
+        </route>
+
+        <route id="ConsoHistory">
+            <from uri="websocket://0.0.0.0:9290/wsConsoHistory?maxIdleTime=0"/>
+
+            <to uri="sql:SELECT * FROM POWERCONSUMPTIONHISTORY?dataSource=ds_L1db"/>
+
+            <setHeader name="chaine"><simple>[</simple></setHeader>
+
+            <loop>
+                <simple>${body.size()}</simple>
+
+                <setHeader name="rowCount"><simple>${header.CamelLoopIndex}</simple></setHeader>
+
+                <choice>
+                    <when>
+                        <simple>${header.rowCount} == 0</simple>
+
+                        <setHeader name="DATE"><simple>${body.get(${header.rowCount}).get('DATE_TEXTE')}</simple></setHeader>
+                        <setHeader name="CARBONINTENSITY"><simple>${body.get(${header.rowCount}).get('CARBONINTENSITY')}</simple></setHeader>
+                        <setHeader name="CITY"><simple>${body.get(${header.rowCount}).get('CITY')}</simple></setHeader>
+
+                        <setHeader name="chaine"><simple>${header.name}{'DATE':${header.DATE},'CARBONINTENSITY':${header.CARBONINTENSITY},'CITY':${header.CITY}}</simple></setHeader>
+                    </when>
+                    <otherwise>
+                        <setHeader name="DATE"><simple>${body.get(${header.rowCount}).get('DATE_TEXTE')}</simple></setHeader>
+                        <setHeader name="CARBONINTENSITY"><simple>${body.get(${header.rowCount}).get('CARBONINTENSITY')}</simple></setHeader>
+                        <setHeader name="CITY"><simple>${body.get(${header.rowCount}).get('CITY')}</simple></setHeader>
+
+                        <setHeader name="chaine"><simple>${header.name},{'DATE':${header.DATE},'CARBONINTENSITY':${header.CARBONINTENSITY},'CITY':${header.CITY}}</simple></setHeader>
+                    </otherwise>
+                </choice>
+            </loop>
+
+            <setHeader name="chaine"><simple>${header.chaine}]</simple></setHeader>
+
+            <to uri="websocket://0.0.0.0:9290/ws2History?sendToAll=true"/>
+        </route>
+
+        <route id="APEL_API_CARBON">
+            <from uri="timer://timer?fixedRate=true&amp;period=3600000"/>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.CARBONINTENSITYHISTORY WHERE CITY='Paris' ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+            <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+            
+            <script>
+                <groovy>
+                    def Table = headers.lastDate.split(' ')
+                    def Table2 = Table[0].split('-')
+                    def Table3 = Table[1].split(':')
+
+                    request.headers.lastDateDay = Table2[2]
+                    request.headers.lastMonth = Table2[1]
+                    request.headers.lastHour = Table3[0]
+                </groovy>
+            </script>
+            
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+
+            <log message="Data Save Paris - Amiens - Lille"/>
+
+            <to uri="https://api.electricitymap.org/v3/carbon-intensity/history?lat=48.8566&amp;lon=2.3522"/>
+
+            <setHeader name="HistoryParis"><jsonpath>$.history</jsonpath></setHeader>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="datetime"><simple>${header.HistoryParis[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryParis[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryParis[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryParis[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryParis[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryParis[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Paris</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">48.8566</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">2.3522</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryParis[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryParis[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryParis[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryParis[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryParis[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Paris</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">48.8566</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">2.3522</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryParis[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryParis[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryParis[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryParis[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryParis[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Paris</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">48.8566</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">2.3522</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+
+            <to uri="https://api.electricitymap.org/v3/carbon-intensity/history?lat=49.90&amp;lon=2.3"/>
+            <setHeader name="HistoryAmiens"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.CARBONINTENSITYHISTORY WHERE CITY='Amiens' ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+            <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+
+
+            <script>
+                <groovy>
+                    def Table = headers.lastDate.split(' ')
+                    def Table2 = Table[0].split('-')
+                    def Table3 = Table[1].split(':')
+
+                    request.headers.lastDateDay = Table2[2]
+                    request.headers.lastMonth = Table2[1]
+                    request.headers.lastHour = Table3[0]
+                </groovy>
+            </script>
+            
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="datetime"><simple>${header.HistoryAmiens[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryAmiens[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryAmiens[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryAmiens[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryAmiens[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryAmiens[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Amiens</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">49.90</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">2.3</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryAmiens[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryAmiens[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryAmiens[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryAmiens[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryAmiens[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Amiens</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">49.90</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">2.3</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryAmiens[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryAmiens[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryAmiens[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryAmiens[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryAmiens[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Amiens</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">49.90</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">2.3</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+
+            <to uri="https://api.electricitymap.org/v3/carbon-intensity/history?lat=50.6365654&amp;lon=3.0635282"/>
+            <setHeader name="HistoryLille"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.CARBONINTENSITYHISTORY WHERE CITY='Lille' ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+            <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+
+            <script>
+                <groovy>
+                    def Table = headers.lastDate.split(' ')
+                    def Table2 = Table[0].split('-')
+                    def Table3 = Table[1].split(':')
+
+                    request.headers.lastDateDay = Table2[2]
+                    request.headers.lastMonth = Table2[1]
+                    request.headers.lastHour = Table3[0]
+                </groovy>
+            </script>
+            
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="datetime"><simple>${header.HistoryLille[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryLille[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryLille[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryLille[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryLille[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryLille[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Lille</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">50.6365654</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">3.0635282</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryLille[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryLille[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryLille[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryLille[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryLille[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Lille</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">50.6365654</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">3.0635282</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryLille[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryLille[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryLille[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryLille[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryLille[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Lille</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">50.6365654</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">3.0635282</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CARBON_2">
+            <from uri="timer://timer2?fixedRate=true&amp;period=3600000"/>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.CARBONINTENSITYHISTORY WHERE CITY='Rouen' ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+            <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+
+            <script>
+                <groovy>
+                    def Table = headers.lastDate.split(' ')
+                    def Table2 = Table[0].split('-')
+                    def Table3 = Table[1].split(':')
+
+                    request.headers.lastDateDay = Table2[2]
+                    request.headers.lastMonth = Table2[1]
+                    request.headers.lastHour = Table3[0]
+                </groovy>
+            </script>
+
+            <log message="Data Save Rouen - Dijon - Bordeaux"/>
+
+            <to uri="https://api.electricitymap.org/v3/carbon-intensity/history?lat=49.44&amp;lon=1.09"/>
+            <setHeader name="HistoryRouen"><jsonpath>$.history</jsonpath></setHeader>
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="datetime"><simple>${header.HistoryRouen[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryRouen[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryRouen[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryRouen[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryRouen[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryRouen[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Rouen</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">49.44</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">1.09</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryRouen[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryRouen[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryRouen[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryRouen[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryRouen[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Rouen</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">49.44</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">1.09</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryRouen[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryRouen[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryRouen[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryRouen[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryRouen[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Rouen</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">49.44</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">1.09</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+
+            <to uri="https://api.electricitymap.org/v3/carbon-intensity/history?lat=47.3215806&amp;lon=5.0414701"/>
+            <setHeader name="HistoryDijon"><jsonpath>$.history</jsonpath></setHeader>
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.CARBONINTENSITYHISTORY WHERE CITY='Dijon' ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+            <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+
+            <script>
+                <groovy>
+                    def Table = headers.lastDate.split(' ')
+                    def Table2 = Table[0].split('-')
+                    def Table3 = Table[1].split(':')
+
+                    request.headers.lastDateDay = Table2[2]
+                    request.headers.lastMonth = Table2[1]
+                    request.headers.lastHour = Table3[0]
+                </groovy>
+            </script>
+            
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="datetime"><simple>${header.HistoryDijon[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryDijon[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryDijon[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryDijon[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryDijon[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryDijon[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Dijon</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">47.3215806</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">5.0414701</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryDijon[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryDijon[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryDijon[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryDijon[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryDijon[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Dijon</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">47.3215806</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">5.0414701</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryDijon[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryDijon[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryDijon[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryDijon[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryDijon[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Dijon</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">47.3215806</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">5.0414701</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+
+            <to uri="https://api.electricitymap.org/v3/carbon-intensity/history?lat=44.841225&amp;lon=-0.5800364"/>
+            <setHeader name="HistoryBordeaux"><jsonpath>$.history</jsonpath></setHeader>
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.CARBONINTENSITYHISTORY WHERE CITY='Bordeaux' ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+            <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+
+            <script>
+                <groovy>
+                    def Table = headers.lastDate.split(' ')
+                    def Table2 = Table[0].split('-')
+                    def Table3 = Table[1].split(':')
+
+                    request.headers.lastDateDay = Table2[2]
+                    request.headers.lastMonth = Table2[1]
+                    request.headers.lastHour = Table3[0]
+                </groovy>
+            </script>
+            
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="datetime"><simple>${header.HistoryBordeaux[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryBordeaux[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryBordeaux[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryBordeaux[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryBordeaux[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryBordeaux[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Bordeaux</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">44.841225</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">-0.5800364</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryBordeaux[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryBordeaux[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryBordeaux[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryBordeaux[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryBordeaux[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Bordeaux</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">44.841225</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">-0.5800364</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryBordeaux[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryBordeaux[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryBordeaux[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryBordeaux[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryBordeaux[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Bordeaux</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">44.841225</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">-0.5800364</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+
+        </route>
+
+        <route id="APEL_API_CARBON_3">
+            <from uri="timer://timer3?fixedRate=true&amp;period=3600000"/>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.CARBONINTENSITYHISTORY WHERE CITY='Toulouse' ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+            <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+
+            <script>
+                <groovy>
+                    def Table = headers.lastDate.split(' ')
+                    def Table2 = Table[0].split('-')
+                    def Table3 = Table[1].split(':')
+
+                    request.headers.lastDateDay = Table2[2]
+                    request.headers.lastMonth = Table2[1]
+                    request.headers.lastHour = Table3[0]
+                </groovy>
+            </script>
+
+            <log message="Data Save Toulouse - Lyon - Strasbourg"/>
+
+            <to uri="https://api.electricitymap.org/v3/carbon-intensity/history?lat=43.6044622&amp;lon=1.4442469"/>
+            <setHeader name="HistoryToulouse"><jsonpath>$.history</jsonpath></setHeader>
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="datetime"><simple>${header.HistoryToulouse[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryToulouse[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryToulouse[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryToulouse[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryToulouse[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryToulouse[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Toulouse</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">43.6044622</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">1.4442469</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryToulouse[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryToulouse[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryToulouse[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryToulouse[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryToulouse[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Toulouse</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">43.6044622</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">1.4442469</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryToulouse[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryToulouse[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryToulouse[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryToulouse[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryToulouse[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Toulouse</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">43.6044622</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">1.4442469</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+
+            <to uri="https://api.electricitymap.org/v3/carbon-intensity/history?lat=45.7578137&amp;lon=4.8320114"/>
+            <setHeader name="HistoryLyon"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.CARBONINTENSITYHISTORY WHERE CITY='Lyon' ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+            <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+
+            <script>
+                <groovy>
+                    def Table = headers.lastDate.split(' ')
+                    def Table2 = Table[0].split('-')
+                    def Table3 = Table[1].split(':')
+
+                    request.headers.lastDateDay = Table2[2]
+                    request.headers.lastMonth = Table2[1]
+                    request.headers.lastHour = Table3[0]
+                </groovy>
+            </script>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="datetime"><simple>${header.HistoryLyon[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryLyon[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryLyon[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryLyon[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryLyon[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryLyon[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Lyon</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">45.7578137</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">4.8320114</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryLyon[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryLyon[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryLyon[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryLyon[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryLyon[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Lyon</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">45.7578137</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">4.8320114</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryLyon[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryLyon[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryLyon[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryLyon[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryLyon[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Lyon</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">45.7578137</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">4.8320114</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+
+            <to uri="https://api.electricitymap.org/v3/carbon-intensity/history?lat=48.584614&amp;lon=7.7507127"/>
+            <setHeader name="HistoryStrasbourg"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.CARBONINTENSITYHISTORY WHERE CITY='Strasbourg' ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+            <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+
+            <script>
+                <groovy>
+                    def Table = headers.lastDate.split(' ')
+                    def Table2 = Table[0].split('-')
+                    def Table3 = Table[1].split(':')
+
+                    request.headers.lastDateDay = Table2[2]
+                    request.headers.lastMonth = Table2[1]
+                    request.headers.lastHour = Table3[0]
+                </groovy>
+            </script>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="datetime"><simple>${header.HistoryStrasbourg[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryStrasbourg[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryStrasbourg[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryStrasbourg[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryStrasbourg[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryStrasbourg[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Strasbourg</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">48.584614</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">7.7507127</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryStrasbourg[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryStrasbourg[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryStrasbourg[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryStrasbourg[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryStrasbourg[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Strasbourg</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">48.584614</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">7.7507127</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryStrasbourg[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryStrasbourg[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryStrasbourg[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryStrasbourg[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryStrasbourg[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Strasbourg</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">48.584614</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">7.7507127</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+
+        </route>
+
+        <route id="APEL_API_CARBON_4">
+            <from uri="timer://timer4?fixedRate=true&amp;period=3600000"/>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.CARBONINTENSITYHISTORY WHERE CITY='Ajaccio' ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+            <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+
+            <script>
+                <groovy>
+                    def Table = headers.lastDate.split(' ')
+                    def Table2 = Table[0].split('-')
+                    def Table3 = Table[1].split(':')
+
+                    request.headers.lastDateDay = Table2[2]
+                    request.headers.lastMonth = Table2[1]
+                    request.headers.lastHour = Table3[0]
+                </groovy>
+            </script>
+
+            <log message="Data Save Ajaccio - Marseille - Rennes"/>
+
+            <to uri="https://api.electricitymap.org/v3/carbon-intensity/history?lat=41.9263991&amp;lon=8.7376029"/>
+            <setHeader name="HistoryAjaccio"><jsonpath>$.history</jsonpath></setHeader>
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="datetime"><simple>${header.HistoryAjaccio[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryAjaccio[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryAjaccio[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryAjaccio[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryAjaccio[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryAjaccio[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Ajaccio</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">41.9263991</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">8.7376029</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryAjaccio[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryAjaccio[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryAjaccio[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryAjaccio[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryAjaccio[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Ajaccio</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">41.9263991</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">8.7376029</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryAjaccio[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryAjaccio[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryAjaccio[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryAjaccio[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryAjaccio[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Ajaccio</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">41.9263991</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">8.7376029</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+
+            <to uri="https://api.electricitymap.org/v3/carbon-intensity/history?lat=43.2961743&amp;lon=5.3699525"/>
+            <setHeader name="HistoryMarseille"><jsonpath>$.history</jsonpath></setHeader>
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.CARBONINTENSITYHISTORY WHERE CITY='Marseille' ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+            <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+
+            <script>
+                <groovy>
+                    def Table = headers.lastDate.split(' ')
+                    def Table2 = Table[0].split('-')
+                    def Table3 = Table[1].split(':')
+
+                    request.headers.lastDateDay = Table2[2]
+                    request.headers.lastMonth = Table2[1]
+                    request.headers.lastHour = Table3[0]
+                </groovy>
+            </script>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="datetime"><simple>${header.HistoryMarseille[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryMarseille[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryMarseille[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryMarseille[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryMarseille[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryMarseille[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Marseille</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">43.2961743</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">5.3699525</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryMarseille[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryMarseille[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryMarseille[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryMarseille[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryMarseille[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Marseille</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">43.2961743</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">5.3699525</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryMarseille[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryMarseille[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryMarseille[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryMarseille[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryMarseille[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Marseille</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">43.2961743</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">5.3699525</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+
+            <to uri="https://api.electricitymap.org/v3/carbon-intensity/history?lat=48.1113387&amp;lon=-1.6800198"/>
+            <setHeader name="HistoryRennes"><jsonpath>$.history</jsonpath></setHeader>
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.CARBONINTENSITYHISTORY WHERE CITY='Rennes' ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+            <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+
+            <script>
+                <groovy>
+                    def Table = headers.lastDate.split(' ')
+                    def Table2 = Table[0].split('-')
+                    def Table3 = Table[1].split(':')
+
+                    request.headers.lastDateDay = Table2[2]
+                    request.headers.lastMonth = Table2[1]
+                    request.headers.lastHour = Table3[0]
+                </groovy>
+            </script>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="datetime"><simple>${header.HistoryRennes[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryRennes[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryRennes[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryRennes[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryRennes[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryRennes[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Rennes</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">48.1113387</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">-1.6800198</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryRennes[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryRennes[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryRennes[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryRennes[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryRennes[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Rennes</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">48.1113387</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">-1.6800198</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryRennes[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryRennes[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryRennes[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryRennes[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryRennes[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Rennes</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">48.1113387</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">-1.6800198</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+
+        </route>
+
+        <route id="APEL_API_CARBON_5">
+            <from uri="timer://timer5?fixedRate=true&amp;period=3600000"/>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.CARBONINTENSITYHISTORY WHERE CITY='Orléans' ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+            <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+
+            <script>
+                <groovy>
+                    def Table = headers.lastDate.split(' ')
+                    def Table2 = Table[0].split('-')
+                    def Table3 = Table[1].split(':')
+
+                    request.headers.lastDateDay = Table2[2]
+                    request.headers.lastMonth = Table2[1]
+                    request.headers.lastHour = Table3[0]
+                </groovy>
+            </script>
+
+            <log message="Data Save Orléans - Nantes - New York"/>
+
+            <to uri="https://api.electricitymap.org/v3/carbon-intensity/history?lat=47.9027336&amp;lon=1.9086066"/>
+            <setHeader name="HistoryOrleans"><jsonpath>$.history</jsonpath></setHeader>
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="datetime"><simple>${header.HistoryOrleans[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryOrleans[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryOrleans[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryOrleans[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryOrleans[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryOrleans[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Orléans</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">47.9027336</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">1.9086066</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryOrleans[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryOrleans[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryOrleans[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryOrleans[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryOrleans[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Orléans</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">47.9027336</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">1.9086066</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryOrleans[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryOrleans[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryOrleans[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryOrleans[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryOrleans[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Orléans</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">47.9027336</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">1.9086066</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+
+            <to uri="https://api.electricitymap.org/v3/carbon-intensity/history?lat=47.2186371&amp;lon=-1.5541362"/>
+            <setHeader name="HistoryNantes"><jsonpath>$.history</jsonpath></setHeader>
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.CARBONINTENSITYHISTORY WHERE CITY='Nantes' ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+            <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+
+            <script>
+                <groovy>
+                    def Table = headers.lastDate.split(' ')
+                    def Table2 = Table[0].split('-')
+                    def Table3 = Table[1].split(':')
+
+                    request.headers.lastDateDay = Table2[2]
+                    request.headers.lastMonth = Table2[1]
+                    request.headers.lastHour = Table3[0]
+                </groovy>
+            </script>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="datetime"><simple>${header.HistoryNantes[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryNantes[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryNantes[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryNantes[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryNantes[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryNantes[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Nantes</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">47.2186371</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">-1.5541362</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryNantes[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryNantes[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryNantes[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryNantes[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryNantes[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Nantes</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">47.2186371</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">-1.5541362</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryNantes[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryNantes[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryNantes[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryNantes[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryNantes[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>Nantes</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">47.2186371</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">-1.5541362</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+
+            <to uri="https://api.electricitymap.org/v3/carbon-intensity/history?lat=40.7127281&amp;lon=-74.0060152"/>
+            <setHeader name="HistoryNewYork"><jsonpath>$.history</jsonpath></setHeader>
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.CARBONINTENSITYHISTORY WHERE CITY='New York' ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+            <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+
+            <script>
+                <groovy>
+                    def Table = headers.lastDate.split(' ')
+                    def Table2 = Table[0].split('-')
+                    def Table3 = Table[1].split(':')
+
+                    request.headers.lastDateDay = Table2[2]
+                    request.headers.lastMonth = Table2[1]
+                    request.headers.lastHour = Table3[0]
+                </groovy>
+            </script>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="datetime"><simple>${header.HistoryNewYork[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryNewYork[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryNewYork[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryNewYork[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryNewYork[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryNewYork[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>New York</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">40.7127281</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">-74.0060152</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryNewYork[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryNewYork[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryNewYork[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryNewYork[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryNewYork[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>New York</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">40.7127281</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">-74.0060152</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="zone"><simple>${header.HistoryNewYork[${header.pointeur}]['zone']}</simple></setHeader>
+                        <setHeader name="carbonIntensity"><simple>${header.HistoryNewYork[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
+                        <setHeader name="emissionFactorType"><simple>${header.HistoryNewYork[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
+                        <setHeader name="isEstimated"><simple>${header.HistoryNewYork[${header.pointeur}]['isEstimated']}</simple></setHeader>
+                        <setHeader name="estimationMethod"><simple>${header.HistoryNewYork[${header.pointeur}]['estimationMethod']}</simple></setHeader>
+                        <setHeader name="city"><simple>New York</simple></setHeader>
+                        <setHeader name="latitude"><simple resultType="java.lang.Float">40.7127281</simple></setHeader>
+                        <setHeader name="longitude"><simple resultType="java.lang.Float">-74.0060152</simple></setHeader>
+
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_AMIENS">
+            <from uri="timer://timerAmiens?fixedRate=true&amp;period=3600000"/>
+            <log message="CONSOMMATION AMIENS"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Amiens</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">49.90</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">2.3</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+            <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+
+            <script>
+                <groovy>
+                    def Table = headers.lastDate.split(' ')
+                    def Table2 = Table[0].split('-')
+                    def Table3 = Table[1].split(':')
+
+                    request.headers.lastDateDay = Table2[2]
+                    request.headers.lastMonth = Table2[1]
+                    request.headers.lastHour = Table3[0]
+                </groovy>
+            </script>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_PARIS">
+            <from uri="timer://timerParis?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION PARIS"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Paris</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">48.8566</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">2.3522</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+            <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+
+            <script>
+                <groovy>
+                    def Table = headers.lastDate.split(' ')
+                    def Table2 = Table[0].split('-')
+                    def Table3 = Table[1].split(':')
+
+                    request.headers.lastDateDay = Table2[2]
+                    request.headers.lastMonth = Table2[1]
+                    request.headers.lastHour = Table3[0]
+                </groovy>
+            </script>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_LILLE">
+            <from uri="timer://timerLille?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION LILLE"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Lille</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">50.6365654</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">3.0635282</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+            <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+
+            <script>
+                <groovy>
+                    def Table = headers.lastDate.split(' ')
+                    def Table2 = Table[0].split('-')
+                    def Table3 = Table[1].split(':')
+
+                    request.headers.lastDateDay = Table2[2]
+                    request.headers.lastMonth = Table2[1]
+                    request.headers.lastHour = Table3[0]
+                </groovy>
+            </script>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_ROUEN">
+            <from uri="timer://timerRouen?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION ROUEN"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Rouen</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">49.44</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">1.09</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
+                    
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+                    
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_DIJON">
+            <from uri="timer://timerDijon?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION DIJON"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Dijon</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">47.3215806</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">5.0414701</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
+                    
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+                    
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_BORDEAUX">
+            <from uri="timer://timerBordeaux?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION BORDEAUX"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Bordeaux</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">44.841225</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">-0.5800364</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
+                    
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+                    
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_TOULOUSE">
+            <from uri="timer://timerToulouse?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION TOULOUSE"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Toulouse</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">43.6044622</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">1.4442469</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
+                    
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+                    
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_LYON">
+            <from uri="timer://timerLyon?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION LYON"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Lyon</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">45.7578137</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">4.8320114</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
+                    
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+                    
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_STRASBOURG">
+            <from uri="timer://timerStrasbourg?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION STRASBOURG"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Strasbourg</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">48.584614</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">7.7507127</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
+                    
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+                    
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_AJACCIO">
+            <from uri="timer://timerAjaccio?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION AJACCIO"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Ajaccio</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">41.9263991</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">8.7376029</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
+                    
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+                    
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_MARSEILLE">
+            <from uri="timer://timerMarseille?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION MARSEILLE"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Marseille</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">43.2961743</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">5.3699525</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
+                    
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+                    
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_RENNES">
+            <from uri="timer://timerRennes?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION RENNES"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Rennes</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">48.1113387</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">-1.6800198</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
+                    
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+                    
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_ORLEANS">
+            <from uri="timer://timerOrleans?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION Orléans"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Orléans</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">47.9027336</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">1.9086066</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
+                    
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+                    
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_NANTES">
+            <from uri="timer://timerNantes?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION NANTES"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Nantes</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">47.2186371</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">-1.5541362</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
+                    
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+                    
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_NEWYORK">
+            <from uri="timer://timerNewYork?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION NEW YORK"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>New York</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">40.7127281</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">-74.0060152</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
+
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
+                    
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+                    
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+    </camelContext>
+
+    <reference id="ds_L1db" interface="javax.sql.DataSource" filter="(osgi.jndi.service.name=L1db)" availability="mandatory"/>
+
+</blueprint>

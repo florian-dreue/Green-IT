@@ -1,0 +1,37 @@
+.content{
+  position: sticky;
+  z-index:1;
+  height: 80vh;
+}
+
+.graph{
+  width: 100vw;
+  height: 60vh;
+}
+
+.form{
+  height: 9vh;
+  width: 100vw;
+  display: flex;
+  justify-content: space-around;
+}
+
+.searchButton{
+  background-color: var(--btn-color) !important;
+  border-radius: 40px;
+  height: 40px;
+}
+
+.mat-form-field-type-mat-date-range-input .mat-form-field-infi{
+  width: 230px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.datePicker{
+  display: flex;
+}
+
+.form{
+  padding-top: 1vh;
+}

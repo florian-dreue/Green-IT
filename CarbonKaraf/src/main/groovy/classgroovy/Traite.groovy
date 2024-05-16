@@ -1,0 +1,6 @@
+package classgroovy
+
+class Traite {
+
+
+}

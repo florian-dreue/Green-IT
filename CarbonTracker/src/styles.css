@@ -1,0 +1,69 @@
+/* You can add global styles to this file, and also import other style files */
+
+html, body {
+    height: 100%;
+}
+body {
+    margin: 0;
+    font-family: "Calibri"
+}
+body:before{
+    content: "";
+    position: fixed;
+    height: 100%; width: 100%;
+}
+
+:root{
+  --text-color : #212E53;
+  --background-color : #93E1F0;
+  --btn-valid-color : #82F2A7;
+  --btn-cancel-color : #EE2449;
+  --btn-modified: #F8B878;
+  --btn-color: aliceblue;
+  --text-shadow : rgb(37, 31, 6);
+  --background-color-white : rgba(255, 255, 255, 0.8);
+  --background-page-color: #f0f8ff;
+  --light--color: #CEF1F9;
+  --border-color: #00B6DA;
+  --selected-color: #05D5AA;
+  --input-color: #B6CDE8;
+}
+
+@font-face {
+    font-family: 'Material Icons';
+    font-style: normal;
+    font-weight: 400;
+}
+
+.material-icons {
+    font-family: 'Material Icons';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+}
+
+.mat-form-field-flex{
+  border-radius: 5px;
+  font-weight: 700;
+}
+
+.mat-dialog-custom > mat-dialog-container {
+  background-color: transparent !important;
+}
+
+.mat-input-element:disabled {
+  color: #5e5152 !important;
+}
+
+.mat-form-field-subscript-wrapper {
+  font-size: 100% !important;
+}
