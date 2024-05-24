@@ -22,12 +22,14 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MapComponent } from './map/map.component';
 import { CarbonIntensityComponent } from './carbon-intensity/carbon-intensity.component';
+import { RequestPowerComponent } from './request-power/request-power.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     MapComponent,
     CarbonIntensityComponent,
+    RequestPowerComponent,
   ],
   imports: [
     BrowserModule,

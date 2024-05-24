@@ -16,6 +16,8 @@ export class VariablesGlobales {
    */
   public wsCarbonHistory = new WebSocket ('ws://localhost:9290/wsCarbonHistory');
   public ws2CarbonHistory = new WebSocket ('ws://localhost:9290/ws2CarbonHistory');
+  public wsConsoHistory = new WebSocket ('ws://localhost:9290/wsConsoHistory');
+  public ws2ConsoHistory = new WebSocket ('ws://localhost:9290/ws2ConsoHistory');
 
   delay(ms: number) {
     return new Promise( resolve => setTimeout(resolve, ms) );

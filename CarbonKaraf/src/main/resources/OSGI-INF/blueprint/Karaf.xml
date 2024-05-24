@@ -124,7 +124,7 @@
 
             <setHeader name="chaine"><simple>${header.chaine}]</simple></setHeader>
 
-            <to uri="websocket://0.0.0.0:9290/ws2History?sendToAll=true"/>
+            <to uri="websocket://0.0.0.0:9290/ws2ConsoHistory?sendToAll=true"/>
         </route>
 
         <route id="APEL_API_CARBON">
@@ -1543,23 +1543,38 @@
             <setHeader name="longitude"><simple resultType="java.lang.Float">2.3</simple></setHeader>
 
             <log message="${header.city}"/>
-            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=49.90&amp;lon=2.3"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
             <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
-            <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
 
-            <script>
-                <groovy>
-                    def Table = headers.lastDate.split(' ')
-                    def Table2 = Table[0].split('-')
-                    def Table3 = Table[1].split(':')
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
 
-                    request.headers.lastDateDay = Table2[2]
-                    request.headers.lastMonth = Table2[1]
-                    request.headers.lastHour = Table3[0]
-                </groovy>
-            </script>
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
 
             <loop>
                 <simple>24</simple>
@@ -1634,23 +1649,38 @@
             <setHeader name="longitude"><simple resultType="java.lang.Float">2.3522</simple></setHeader>
 
             <log message="${header.city}"/>
-            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=48.8566&amp;lon=2.3522"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
             <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
-            <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
 
-            <script>
-                <groovy>
-                    def Table = headers.lastDate.split(' ')
-                    def Table2 = Table[0].split('-')
-                    def Table3 = Table[1].split(':')
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
 
-                    request.headers.lastDateDay = Table2[2]
-                    request.headers.lastMonth = Table2[1]
-                    request.headers.lastHour = Table3[0]
-                </groovy>
-            </script>
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
 
             <loop>
                 <simple>24</simple>
@@ -1725,23 +1755,38 @@
             <setHeader name="longitude"><simple resultType="java.lang.Float">3.0635282</simple></setHeader>
 
             <log message="${header.city}"/>
-            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=50.6365654&amp;lon=3.0635282"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
             <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
-            <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
 
-            <script>
-                <groovy>
-                    def Table = headers.lastDate.split(' ')
-                    def Table2 = Table[0].split('-')
-                    def Table3 = Table[1].split(':')
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
 
-                    request.headers.lastDateDay = Table2[2]
-                    request.headers.lastMonth = Table2[1]
-                    request.headers.lastHour = Table3[0]
-                </groovy>
-            </script>
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
 
             <loop>
                 <simple>24</simple>
@@ -1816,7 +1861,7 @@
             <setHeader name="longitude"><simple resultType="java.lang.Float">1.09</simple></setHeader>
 
             <log message="${header.city}"/>
-            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=49.44&amp;lon=1.09"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
             <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
@@ -1921,7 +1966,7 @@
             <setHeader name="longitude"><simple resultType="java.lang.Float">5.0414701</simple></setHeader>
 
             <log message="${header.city}"/>
-            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=47.3215806&amp;lon=5.0414701"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
             <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
@@ -2027,7 +2072,7 @@
             <setHeader name="longitude"><simple resultType="java.lang.Float">-0.5800364</simple></setHeader>
 
             <log message="${header.city}"/>
-            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=44.841225&amp;lon=-0.5800364"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
             <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
@@ -2133,7 +2178,7 @@
             <setHeader name="longitude"><simple resultType="java.lang.Float">1.4442469</simple></setHeader>
 
             <log message="${header.city}"/>
-            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=43.6044622&amp;lon=1.4442469"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
             <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
@@ -2239,7 +2284,7 @@
             <setHeader name="longitude"><simple resultType="java.lang.Float">4.8320114</simple></setHeader>
 
             <log message="${header.city}"/>
-            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=45.7578137&amp;lon=4.8320114"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
             <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
@@ -2345,7 +2390,7 @@
             <setHeader name="longitude"><simple resultType="java.lang.Float">7.7507127</simple></setHeader>
 
             <log message="${header.city}"/>
-            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=48.584614&amp;lon=7.7507127"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
             <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
@@ -2451,7 +2496,7 @@
             <setHeader name="longitude"><simple resultType="java.lang.Float">8.7376029</simple></setHeader>
 
             <log message="${header.city}"/>
-            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=41.9263991&amp;lon=8.7376029"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
             <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
@@ -2557,7 +2602,7 @@
             <setHeader name="longitude"><simple resultType="java.lang.Float">5.3699525</simple></setHeader>
 
             <log message="${header.city}"/>
-            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=43.2961743&amp;lon=5.3699525"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
             <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
@@ -2663,7 +2708,7 @@
             <setHeader name="longitude"><simple resultType="java.lang.Float">-1.6800198</simple></setHeader>
 
             <log message="${header.city}"/>
-            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=48.1113387&amp;lon=-1.6800198"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
             <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
@@ -2769,7 +2814,7 @@
             <setHeader name="longitude"><simple resultType="java.lang.Float">1.9086066</simple></setHeader>
 
             <log message="${header.city}"/>
-            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=47.9027336&amp;lon=1.9086066"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
             <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
@@ -2875,7 +2920,7 @@
             <setHeader name="longitude"><simple resultType="java.lang.Float">-1.5541362</simple></setHeader>
 
             <log message="${header.city}"/>
-            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=47.2186371&amp;lon=-1.5541362"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
             <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
@@ -2981,7 +3026,7 @@
             <setHeader name="longitude"><simple resultType="java.lang.Float">-74.0060152</simple></setHeader>
 
             <log message="${header.city}"/>
-            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat${header.latitude}&amp;lon=${header.longitude}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=40.7127281&amp;lon=-74.0060152"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
             <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>

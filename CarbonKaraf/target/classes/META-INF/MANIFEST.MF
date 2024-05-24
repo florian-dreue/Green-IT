@@ -1,5 +1,5 @@
 Manifest-Version: 1.0
-Bnd-LastModified: 1715867136500
+Bnd-LastModified: 1715877323783
 Build-Jdk: 11.0.22
 Built-By: Florian
 Bundle-Blueprint: OSGI-INF/blueprint/Karaf.xml
