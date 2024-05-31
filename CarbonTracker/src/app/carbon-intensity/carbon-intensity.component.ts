@@ -33,6 +33,11 @@ export class CarbonIntensityComponent implements OnInit {
     let TabDate: string[] = splitDate[0].split("/");
     this.dateDebString = TabDate[2]+"-"+TabDate[1]+"-"+TabDate[0]+" "+splitDate[1];
 
+    if (this.global.wsCarbonHistory.readyState == WebSocket.OPEN && this.global.ws2CarbonHistory.readyState == WebSocket.OPEN) {
+      this.global.wsCarbonHistory.send('Amiens,1, , ,' + this.global.clef)
+      console.log("demande carbon");
+    }
+
     var chartDom = document.getElementById('carbonGraph');
     // @ts-ignore
     var myChart = echarts.init(chartDom);

@@ -1,0 +1,39 @@
+<div class="content">
+  <div class="form">
+    <div class="inputClass">
+      <mat-form-field class="form-field">
+        <mat-label>Ville</mat-label>
+        <mat-select [(value)]="citySelected">
+          <mat-option value="All">Toutes</mat-option>
+          <mat-option value="Amiens">Amiens</mat-option>
+          <mat-option value="Paris">Paris</mat-option>
+          <mat-option value="Lille">Lille</mat-option>
+          <mat-option value="Toulouse">Toulouse</mat-option>
+          <mat-option value="Lyon">Lyon</mat-option>
+          <mat-option value="Strasbourg">Strasbourg</mat-option>
+          <mat-option value="Rouen">Rouen</mat-option>
+          <mat-option value="Dijon">Dijon</mat-option>
+          <mat-option value="Bordeaux">Bordeaux</mat-option>
+          <mat-option value="Ajaccio">Ajaccio</mat-option>
+          <mat-option value="Marseille">Marseille</mat-option>
+          <mat-option value="Rennes">Rennes</mat-option>
+          <mat-option value="Orléans">Orléans</mat-option>
+          <mat-option value="Nantes">Nantes</mat-option>
+          <mat-option value="New York">New York</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+    <div>
+      <mat-form-field class="form-field">
+        <mat-label>Seuil</mat-label>
+        <input matInput type="number" placeholder="Seuil" [(ngModel)]="seuil" name="seuil">
+        <button *ngIf="seuil" matSuffix mat-icon-button aria-label="Clear" (click)="seuil=0">
+          <mat-icon>close</mat-icon>
+        </button>
+      </mat-form-field>
+    </div>
+  </div>
+  <div class="containerButton">
+    <button class="validButton" mat-raised-button (click)="valid()">Valider</button>
+  </div>
+</div>

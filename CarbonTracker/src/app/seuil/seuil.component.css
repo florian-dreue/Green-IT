@@ -1,0 +1,41 @@
+.content{
+  position: sticky;
+  z-index:1;
+  height: 80vh;
+}
+
+.form{
+  padding-top: 1vh;
+  width: 100vw;
+  justify-content: center;
+  align-items: center;
+}
+
+.inputClass{
+  margin: 0 auto 0 auto;
+}
+
+.form-field{
+  background-color: var(--input-color);
+  border-radius: 30px;
+  padding: 1vh 2vw 0 2vw;
+  color: var(--text-color);
+  display: block;
+  width: 20vw;
+  margin: 9vh auto;
+}
+
+.validButton{
+  background-color: var(--btn-valid-color);
+  border-radius: 25px;
+  text-align: center;
+  width: 15vw;
+  margin: 5vh auto 2vh auto;
+  font-size: large;
+  min-width: 100px;
+}
+
+.containerButton{
+  width: 100vw;
+  display: flex;
+}

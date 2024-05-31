@@ -1,1 +1,44 @@
-<p>request-power works!</p>
+<div class="content">
+  <div class="form">
+    <mat-form-field>
+      <mat-label>Ville</mat-label>
+      <mat-select [(value)]="citySelected">
+        <mat-option value="All">Toutes</mat-option>
+        <mat-option value="Amiens">Amiens</mat-option>
+        <mat-option value="Paris">Paris</mat-option>
+        <mat-option value="Lille">Lille</mat-option>
+        <mat-option value="Toulouse">Toulouse</mat-option>
+        <mat-option value="Lyon">Lyon</mat-option>
+        <mat-option value="Strasbourg">Strasbourg</mat-option>
+        <mat-option value="Rouen">Rouen</mat-option>
+        <mat-option value="Dijon">Dijon</mat-option>
+        <mat-option value="Bordeaux">Bordeaux</mat-option>
+        <mat-option value="Ajaccio">Ajaccio</mat-option>
+        <mat-option value="Marseille">Marseille</mat-option>
+        <mat-option value="Rennes">Rennes</mat-option>
+        <mat-option value="Orléans">Orléans</mat-option>
+        <mat-option value="Nantes">Nantes</mat-option>
+        <mat-option value="New York">New York</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Fréquence</mat-label>
+      <mat-select [(value)]="hourSelected">
+        <mat-option value="1">Toute les heures</mat-option>
+        <mat-option value="2">Toute les 2 heures</mat-option>
+        <mat-option value="3">Toute les 3 heures</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Interval de temps</mat-label>
+      <mat-date-range-input class="datePicker" [formGroup]="range" [rangePicker]="picker">
+        <input matStartDate formControlName="start" placeholder="Start date">
+        <input matEndDate formControlName="end" placeholder="End date">
+      </mat-date-range-input>
+      <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+      <mat-date-range-picker #picker></mat-date-range-picker>
+    </mat-form-field>
+    <button class="searchButton" mat-raised-button (click)="search()">Rechercher</button>
+  </div>
+  <div id="requestGraph" class="graph"></div>
+</div>

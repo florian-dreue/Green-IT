@@ -92,8 +92,22 @@
 
         <route id="ConsoHistory">
             <from uri="websocket://0.0.0.0:9290/wsConsoHistory?maxIdleTime=0"/>
+            <setHeader name="websocket"><simple>${body}</simple></setHeader>
 
-            <to uri="sql:SELECT * FROM POWERCONSUMPTIONHISTORY?dataSource=ds_L1db"/>
+            <script>
+                <groovy>
+                    def Table = headers.websocket.split(',')
+
+                    request.headers.ville = Table[0]
+                    request.headers.frequence = Table[1]
+                    request.headers.dateDeb = Table[2]
+                    request.headers.dateFin = Table[3]
+                    request.headers.clef = Table[4]
+                </groovy>
+            </script>
+            <log message="demande Conso"/>
+
+            <to uri="sql:SELECT * FROM POWERCONSUMPTIONHISTORY ORDER BY DATETEXTE?dataSource=ds_L1db"/>
 
             <setHeader name="chaine"><simple>[</simple></setHeader>
 
@@ -122,9 +136,36 @@
                 </choice>
             </loop>
 
-            <setHeader name="chaine"><simple>${header.chaine}]</simple></setHeader>
+            <setHeader name="chaine"><simple>${header.chaine},{"clef":"${header.clef}","frequence":${header.frequence}}]</simple></setHeader>
+
+            <setBody><simple>${header.chaine}</simple></setBody>
+
+            <log message="send Conso"/>
 
             <to uri="websocket://0.0.0.0:9290/ws2ConsoHistory?sendToAll=true"/>
+        </route>
+
+        <route id="NewSeuil">
+            <from uri="websocket://0.0.0.0:9290/wsnewSeuil?maxIdleTime=0"/>
+            <setHeader name="websocket"><simple>${body}</simple></setHeader>
+
+            <script>
+                <groovy>
+                    def Table = headers.websocket.split(',')
+
+                    request.headers.ville = Table[0]
+                    request.headers.seuil = Table[1]
+                    request.headers.clef = Table[4]
+                </groovy>
+            </script>
+
+            <to uri="sql:DELETE FROM SEUIL WHERE VILLE=:#ville?dataSource=ds_L1db"/>
+
+            <to uri="sql:INSERT INTO SEUIL (VALEUR,VILLE) VALUES (:#seuil,:#ville)?dataSource=ds_L1db"/>
+
+            <setBody><simple>{'etat':'success','message':'Le seuil à été enregistré','clef':${header.clef}}</simple></setBody>
+
+            <to uri="websocket://0.0.0.0:9290/ws2newSeuil?sendToAll=true"/>
         </route>
 
         <route id="APEL_API_CARBON">

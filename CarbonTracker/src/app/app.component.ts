@@ -39,6 +39,11 @@ export class AppComponent implements OnInit {
       console.log("demande carbon");
     }
 
+    if (this.global.wsConsoHistory.readyState == WebSocket.OPEN && this.global.ws2ConsoHistory.readyState == WebSocket.OPEN) {
+      this.global.wsConsoHistory.send('Amiens,1, , ,' + this.global.clef)
+      console.log("demande carbon");
+    }
+
     setInterval(() => {
       /* Reconnexion des websockets */
       if (this.global.wsCarbonHistory.readyState == WebSocket.CLOSED) {
@@ -52,6 +57,12 @@ export class AppComponent implements OnInit {
       }
       if (this.global.ws2ConsoHistory.readyState == WebSocket.CLOSED) {
         this.global.ws2ConsoHistory = new WebSocket('ws:///localhost:9290/ws2ConsoHistory');
+      }
+      if (this.global.wsnewSeuil.readyState == WebSocket.CLOSED) {
+        this.global.wsnewSeuil = new WebSocket('ws://localhost:9290/wsnewSeuil');
+      }
+      if (this.global.ws2newSeuil.readyState == WebSocket.CLOSED) {
+        this.global.ws2newSeuil = new WebSocket('ws:///localhost:9290/ws2newSeuil');
       }
 
       /* Affiche le message d'erreur si la communication avec le serveur est coupée */

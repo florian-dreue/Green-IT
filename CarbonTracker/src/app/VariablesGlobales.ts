@@ -6,6 +6,7 @@ export class VariablesGlobales {
   public connected: any;
   public dataConnected: any;
   public dataJson: any = [];
+  public dataJsonDemande: any = [];
   public clef: string = "";
 
   /**
@@ -18,6 +19,8 @@ export class VariablesGlobales {
   public ws2CarbonHistory = new WebSocket ('ws://localhost:9290/ws2CarbonHistory');
   public wsConsoHistory = new WebSocket ('ws://localhost:9290/wsConsoHistory');
   public ws2ConsoHistory = new WebSocket ('ws://localhost:9290/ws2ConsoHistory');
+  public wsnewSeuil = new WebSocket ('ws://localhost:9290/wsnewSeuil');
+  public ws2newSeuil = new WebSocket ('ws://localhost:9290/ws2newSeuil');
 
   delay(ms: number) {
     return new Promise( resolve => setTimeout(resolve, ms) );

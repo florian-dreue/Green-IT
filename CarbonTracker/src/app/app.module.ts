@@ -23,6 +23,7 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MapComponent } from './map/map.component';
 import { CarbonIntensityComponent } from './carbon-intensity/carbon-intensity.component';
 import { RequestPowerComponent } from './request-power/request-power.component';
+import { SeuilComponent } from './seuil/seuil.component';
 
 @NgModule({
   declarations: [
@@ -30,6 +31,7 @@ import { RequestPowerComponent } from './request-power/request-power.component';
     MapComponent,
     CarbonIntensityComponent,
     RequestPowerComponent,
+    SeuilComponent,
   ],
   imports: [
     BrowserModule,
