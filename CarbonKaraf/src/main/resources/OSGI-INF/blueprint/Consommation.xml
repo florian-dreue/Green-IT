@@ -1,0 +1,1624 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0"
+           xmlns:camel="http://camel.apache.org/schema/blueprint"
+           xsi:schemaLocation="
+         http://www.osgi.org/xmlns/blueprint/v1.0.0 https://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+         http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint.xsd
+         http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0 http://aries.apache.org/schemas/blueprint-cm/blueprint-cm-1.1.0.xsd">
+
+    <camelContext id="CarbonKarafContextConso" xmlns="http://camel.apache.org/schema/blueprint">
+
+        <!--
+            Amiens: 49.90 - 2.3
+            Paris: 48.8566 - 2.3522
+            Lille: 50.6365654 - 3.0635282
+            Rouen: 49.44 - 1.09
+            Dijon: 47.3215806 - 5.0414701
+            Bordeaux: 44.841225 - -0.5800364
+            Toulouse: 43.6044622 - 1.4442469
+            Lyon: 45.7578137 - 4.8320114
+            Strasbourg: 48.584614 - 7.7507127
+            Ajaccio: 41.9263991 - 8.7376029
+            Marseille: 43.2961743 - 5.3699525
+            Rennes: 48.1113387 - -1.6800198
+            Orléans: 47.9027336 - 1.9086066
+            Nantes: 47.2186371 - -1.5541362
+            New York: 40.7127281 - -74.0060152
+        -->
+
+        <route id="APEL_API_CONSOMMATION_AMIENS">
+            <from uri="timer://timerAmiens?fixedRate=true&amp;period=3600000"/>
+            <log message="CONSOMMATION AMIENS"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Amiens</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">49.90</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">2.3</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=49.90&amp;lon=2.3"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
+
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_PARIS">
+            <from uri="timer://timerParis?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION PARIS"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Paris</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">48.8566</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">2.3522</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=48.8566&amp;lon=2.3522"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
+
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_LILLE">
+            <from uri="timer://timerLille?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION LILLE"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Lille</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">50.6365654</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">3.0635282</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=50.6365654&amp;lon=3.0635282"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
+
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_ROUEN">
+            <from uri="timer://timerRouen?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION ROUEN"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Rouen</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">49.44</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">1.09</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=49.44&amp;lon=1.09"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
+
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_DIJON">
+            <from uri="timer://timerDijon?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION DIJON"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Dijon</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">47.3215806</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">5.0414701</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=47.3215806&amp;lon=5.0414701"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
+
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_BORDEAUX">
+            <from uri="timer://timerBordeaux?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION BORDEAUX"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Bordeaux</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">44.841225</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">-0.5800364</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=44.841225&amp;lon=-0.5800364"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
+
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_TOULOUSE">
+            <from uri="timer://timerToulouse?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION TOULOUSE"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Toulouse</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">43.6044622</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">1.4442469</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=43.6044622&amp;lon=1.4442469"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
+
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_LYON">
+            <from uri="timer://timerLyon?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION LYON"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Lyon</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">45.7578137</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">4.8320114</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=45.7578137&amp;lon=4.8320114"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
+
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_STRASBOURG">
+            <from uri="timer://timerStrasbourg?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION STRASBOURG"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Strasbourg</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">48.584614</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">7.7507127</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=48.584614&amp;lon=7.7507127"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
+
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_AJACCIO">
+            <from uri="timer://timerAjaccio?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION AJACCIO"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Ajaccio</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">41.9263991</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">8.7376029</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=41.9263991&amp;lon=8.7376029"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
+
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_MARSEILLE">
+            <from uri="timer://timerMarseille?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION MARSEILLE"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Marseille</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">43.2961743</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">5.3699525</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=43.2961743&amp;lon=5.3699525"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
+
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_RENNES">
+            <from uri="timer://timerRennes?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION RENNES"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Rennes</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">48.1113387</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">-1.6800198</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=48.1113387&amp;lon=-1.6800198"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
+
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_ORLEANS">
+            <from uri="timer://timerOrleans?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION Orléans"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Orléans</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">47.9027336</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">1.9086066</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=47.9027336&amp;lon=1.9086066"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
+
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_NANTES">
+            <from uri="timer://timerNantes?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION NANTES"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>Nantes</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">47.2186371</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">-1.5541362</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=47.2186371&amp;lon=-1.5541362"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
+
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+        <route id="APEL_API_CONSOMMATION_NEWYORK">
+            <from uri="timer://timerNewYork?fixedRate=true&amp;period=3600000"/>
+
+            <log message="CONSOMMATION NEW YORK"/>
+
+            <setHeader name="pointeur"><simple>0</simple></setHeader>
+            <setHeader name="city"><simple>New York</simple></setHeader>
+            <setHeader name="latitude"><simple resultType="java.lang.Float">40.7127281</simple></setHeader>
+            <setHeader name="longitude"><simple resultType="java.lang.Float">-74.0060152</simple></setHeader>
+
+            <log message="${header.city}"/>
+            <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=40.7127281&amp;lon=-74.0060152"/>
+            <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
+
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+
+            <choice>
+                <when>
+                    <simple>${body.size()} > 0</simple>
+
+                    <setHeader name="lastDate"><simple>${body.get(0).get("DATETEXTE")}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            def Table = headers.lastDate.split(' ')
+                            def Table2 = Table[0].split('-')
+                            def Table3 = Table[1].split(':')
+
+                            request.headers.lastDateDay = Table2[2]
+                            request.headers.lastMonth = Table2[1]
+                            request.headers.lastHour = Table3[0]
+                        </groovy>
+                    </script>
+                </when>
+                <otherwise>
+
+                    <setHeader name="lastMonth"><simple resultType="java.lang.Integer">${date:now:MM}</simple></setHeader>
+                    <script>
+                        <groovy>
+                            request.headers.lastMonth = headers.lastMonth - 1
+                        </groovy>
+                    </script>
+                </otherwise>
+            </choice>
+
+            <loop>
+                <simple>24</simple>
+
+                <setHeader name="insert"><simple>false</simple></setHeader>
+
+                <setHeader name="datetime"><simple>${header.History[${header.pointeur}]['datetime']}</simple></setHeader>
+                <script>
+                    <groovy>
+                        def Table = headers.datetime.split('T')
+                        def Table2 = Table[1].split('\\.')
+                        def Table3 = Table[0].split('-')
+                        def Table4 = Table2[0].split(':')
+
+                        request.headers.newDate = Table[0] + " " + Table2[0]
+                        request.headers.day = Table3[2]
+                        request.headers.month = Table3[1]
+                        request.headers.hour = Table4[0]
+                    </groovy>
+                </script>
+
+                <choice>
+                    <when>
+                        <simple>${header.month} > ${header.lastMonth}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.month} > ${header.lastMonth}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} > ${header.lastDateDay}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
+                    </when>
+                    <when>
+                        <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
+
+                        <setHeader name="insert"><simple>true</simple></setHeader>
+
+                        <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
+                    </when>
+                </choice>
+
+                <when>
+                    <simple>${header.insert} == true</simple>
+
+                    <setHeader name="zone"><simple>${header.History[${header.pointeur}]['zone']}</simple></setHeader>
+                    <setHeader name="consommation"><simple>${header.History[${header.pointeur}]['powerConsumptionTotal']}</simple></setHeader>
+                    <setHeader name="production"><simple>${header.History[${header.pointeur}]['powerProductionTotal']}</simple></setHeader>
+                    <setHeader name="import"><simple>${header.History[${header.pointeur}]['powerImportTotal']}</simple></setHeader>
+                    <setHeader name="export"><simple>${header.History[${header.pointeur}]['powerExportTotal']}</simple></setHeader>
+                    <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
+                    <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                </when>
+
+                <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
+            </loop>
+        </route>
+
+    </camelContext>
+
+    <reference id="ds_L2db" interface="javax.sql.DataSource" filter="(osgi.jndi.service.name=L1db)" availability="mandatory"/>
+
+</blueprint>

@@ -24,6 +24,12 @@ export class CarbonIntensityComponent implements OnInit {
   constructor(public global:VariablesGlobales, private _adapter: DateAdapter<any>,@Inject(MAT_DATE_LOCALE) private _locale: string) { }
 
   ngOnInit(): void {
+    const btns = document.querySelectorAll('.menuButton');
+    btns.forEach((btn) => {
+      btn.classList.remove('selected');
+    });
+    document.getElementById('CarbonIntensity')?.classList.add('selected');
+
     this._locale = 'fr';
     this._adapter.setLocale(this._locale);
     this.dateDeb.setDate(this.dateNow.getDate()-7);
@@ -33,10 +39,7 @@ export class CarbonIntensityComponent implements OnInit {
     let TabDate: string[] = splitDate[0].split("/");
     this.dateDebString = TabDate[2]+"-"+TabDate[1]+"-"+TabDate[0]+" "+splitDate[1];
 
-    if (this.global.wsCarbonHistory.readyState == WebSocket.OPEN && this.global.ws2CarbonHistory.readyState == WebSocket.OPEN) {
-      this.global.wsCarbonHistory.send('Amiens,1, , ,' + this.global.clef)
-      console.log("demande carbon");
-    }
+    this.appelRoute();
 
     var chartDom = document.getElementById('carbonGraph');
     // @ts-ignore
@@ -118,31 +121,37 @@ export class CarbonIntensityComponent implements OnInit {
       this.global.ws2CarbonHistory.onmessage = (event) => {
         console.log("data receive: "+event.data);
         let data = JSON.parse(event.data);
-        if(data[data.length-1].clef == this.global.clef){
+        if(data[data.length-1]?.clef == this.global?.clef){
           this.global.dataJson = [];
           if(data[data.length-1].frequence == 1){
             for(let pointeur = 0; pointeur< data.length-1; pointeur++){
-              this.global.dataJson.push([data[pointeur].DATE, data[pointeur].CARBONINTENSITY])
+              if(data[pointeur].DATE && data[pointeur].CARBONINTENSITY){
+                this.global.dataJson.push([data[pointeur].DATE, data[pointeur].CARBONINTENSITY])
+              }
             }
           }
           else{
             if(data[data.length-1].frequence == 2){
               for(let pointeur: number = 0; pointeur< data.length-1; pointeur++){
-                let datePointeur: string = data[pointeur].DATE.split(" ");
-                let hourTab: string[] = datePointeur[1].split(":");
-                let thisHour: number = +hourTab[0]
-                if(thisHour%2==0){
-                  this.global.dataJson.push([data[pointeur].DATE, data[pointeur].CARBONINTENSITY])
+                if(data[pointeur].DATE && data[pointeur].CARBONINTENSITY) {
+                  let datePointeur: string = data[pointeur].DATE.split(" ");
+                  let hourTab: string[] = datePointeur[1].split(":");
+                  let thisHour: number = +hourTab[0]
+                  if (thisHour % 2 == 0) {
+                    this.global.dataJson.push([data[pointeur].DATE, data[pointeur].CARBONINTENSITY])
+                  }
                 }
               }
             }
             else{
               for(let pointeur = 0; pointeur< data.length-1; pointeur++){
-                let datePointeur: string = data[pointeur].DATE.split(" ");
-                let hourTab: string[] = datePointeur[1].split(":");
-                let thisHour: number = +hourTab[0]
-                if(thisHour%3==0){
-                  this.global.dataJson.push([data[pointeur].DATE, data[pointeur].CARBONINTENSITY])
+                if(data[pointeur].DATE && data[pointeur].CARBONINTENSITY) {
+                  let datePointeur: string = data[pointeur].DATE.split(" ");
+                  let hourTab: string[] = datePointeur[1].split(":");
+                  let thisHour: number = +hourTab[0]
+                  if (thisHour % 3 == 0) {
+                    this.global.dataJson.push([data[pointeur].DATE, data[pointeur].CARBONINTENSITY])
+                  }
                 }
               }
             }
@@ -241,6 +250,18 @@ export class CarbonIntensityComponent implements OnInit {
         this.global.wsCarbonHistory.send(this.citySelected+','+this.hourSelected+','+sendStart+' 00:00:00,'+sendEnd+' 24:00:00,' + this.global.clef)
       }
       console.log("demande carbon");
+    }
+  }
+
+  appelRoute(): void{
+    if (this.global.wsCarbonHistory.readyState == WebSocket.OPEN && this.global.ws2CarbonHistory.readyState == WebSocket.OPEN) {
+      this.global.wsCarbonHistory.send('Amiens,1, , ,' + this.global.clef)
+      console.log("demande carbon");
+    }
+    else{
+      setTimeout(()=>{
+        this.appelRoute();
+      },500)
     }
   }
 }

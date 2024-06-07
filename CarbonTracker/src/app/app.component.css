@@ -28,3 +28,8 @@
   background-color: var(--btn-color) !important;
   border-radius: 20px;
 }
+
+.selected{
+  background-color: var(--color-selected) !important;
+}
+

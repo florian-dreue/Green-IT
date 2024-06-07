@@ -6,14 +6,16 @@
 
 .graph{
   width: 100vw;
-  height: 60vh;
+  height: 58vh;
 }
 
 .form{
-  height: 9vh;
+  height: 12vh;
   width: 100vw;
   display: flex;
   justify-content: space-around;
+  align-items: center;
+  padding-top: 1vh;
 }
 
 .searchButton{
@@ -22,16 +24,14 @@
   height: 40px;
 }
 
-.mat-form-field-type-mat-date-range-input .mat-form-field-infi{
-  width: 230px !important;
-  display: flex !important;
-  align-items: center !important;
-}
-
 .datePicker{
-  display: flex;
+  width: 230px;
 }
 
-.form{
-  padding-top: 1vh;
+.searchIcon{
+  margin-left: 5px;
+}
+
+h2{
+  text-align: center;
 }

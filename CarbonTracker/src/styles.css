@@ -27,6 +27,7 @@ body:before{
   --border-color: #00B6DA;
   --selected-color: #05D5AA;
   --input-color: #B6CDE8;
+  --color-selected: #7fc0cd;
 }
 
 @font-face {
@@ -54,6 +55,11 @@ body:before{
 .mat-form-field-flex{
   border-radius: 5px;
   font-weight: 700;
+}
+
+.mat-form-field-infix {
+  display: flex !important;
+  align-items: center;
 }
 
 .mat-dialog-custom > mat-dialog-container {

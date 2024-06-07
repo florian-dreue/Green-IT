@@ -5,9 +5,12 @@
   </div>
 
   <div class="buttons">
-    <button class="menuButton" mat-raised-button routerLink="/carbonIntensity">Intensité carbon</button>
-    <button class="menuButton" mat-raised-button routerLink="/requestPower">Demande</button>
-    <button class="menuButton" mat-raised-button routerLink="/seuil">Seuil</button>
+    <button class="menuButton" id="CarbonIntensity" mat-raised-button routerLink="/carbonIntensity">Intensité carbon</button>
+    <button class="menuButton" id="RequestPower" mat-raised-button routerLink="/requestPower">Demande</button>
+    <button class="menuButton" id="Seuil" mat-raised-button routerLink="/seuil">Seuil</button>
+    <div class="demo-section" *ngIf="global.nbAlertes != 0">
+      <button class="menuButton" id="Alerte" mat-raised-button matBadge={{global.nbAlertes}} [matBadgeHidden]="hidden" routerLink="/alertes">Alertes</button>
+    </div>
   </div>
 
 </div>

@@ -24,6 +24,8 @@ import { MapComponent } from './map/map.component';
 import { CarbonIntensityComponent } from './carbon-intensity/carbon-intensity.component';
 import { RequestPowerComponent } from './request-power/request-power.component';
 import { SeuilComponent } from './seuil/seuil.component';
+import {MatBadgeModule} from "@angular/material/badge";
+import { AlertesComponent } from './alertes/alertes.component';
 
 @NgModule({
   declarations: [
@@ -32,27 +34,29 @@ import { SeuilComponent } from './seuil/seuil.component';
     CarbonIntensityComponent,
     RequestPowerComponent,
     SeuilComponent,
+    AlertesComponent,
   ],
-  imports: [
-    BrowserModule,
-    AppRoutingModule,
-    BrowserAnimationsModule,
-    MatButtonModule,
-    MatDialogModule,
-    MatIconModule,
-    MatFormFieldModule,
-    MatInputModule,
-    FormsModule,
-    ReactiveFormsModule,
-    MatTableModule,
-    MatSelectModule,
-    MatDatepickerModule,
-    MatNativeDateModule,
-    MatTabsModule,
-    MatProgressBarModule,
-    DatePipe,
-    MatAutocompleteModule
-  ],
+    imports: [
+        BrowserModule,
+        AppRoutingModule,
+        BrowserAnimationsModule,
+        MatButtonModule,
+        MatDialogModule,
+        MatIconModule,
+        MatFormFieldModule,
+        MatInputModule,
+        FormsModule,
+        ReactiveFormsModule,
+        MatTableModule,
+        MatSelectModule,
+        MatDatepickerModule,
+        MatNativeDateModule,
+        MatTabsModule,
+        MatProgressBarModule,
+        DatePipe,
+        MatAutocompleteModule,
+        MatBadgeModule
+    ],
   providers: [
     VariablesGlobales
   ],

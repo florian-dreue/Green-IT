@@ -24,6 +24,12 @@ export class RequestPowerComponent implements OnInit {
   constructor(public global:VariablesGlobales, private _adapter: DateAdapter<any>,@Inject(MAT_DATE_LOCALE) private _locale: string) { }
 
   ngOnInit(): void {
+    const btns = document.querySelectorAll('.menuButton');
+    btns.forEach((btn) => {
+      btn.classList.remove('selected');
+    });
+    document.getElementById('RequestPower')?.classList.add('selected');
+
     this._locale = 'fr';
     this._adapter.setLocale(this._locale);
     this.dateDeb.setDate(this.dateNow.getDate()-7);
@@ -33,10 +39,7 @@ export class RequestPowerComponent implements OnInit {
     let TabDate: string[] = splitDate[0].split("/");
     this.dateDebString = TabDate[2]+"-"+TabDate[1]+"-"+TabDate[0]+" "+splitDate[1];
 
-    if (this.global.wsConsoHistory.readyState == WebSocket.OPEN && this.global.ws2ConsoHistory.readyState == WebSocket.OPEN) {
-      this.global.wsConsoHistory.send('Amiens,1, , ,' + this.global.clef)
-      console.log("demande des demandes");
-    }
+    this.appelRoute();
 
     var chartDom = document.getElementById('requestGraph');
     // @ts-ignore
@@ -44,6 +47,9 @@ export class RequestPowerComponent implements OnInit {
     var option= {
       tooltip: {
         trigger: 'axis'
+      },
+      grid:{
+        right: '15%'
       },
       xAxis: {
         type: 'category'
@@ -75,26 +81,26 @@ export class RequestPowerComponent implements OnInit {
         pieces: [
           {
             gt: 0,
-            lt: 15,
+            lt: 20000,
             color: '#93CE07'
           },
           {
-            gt: 15,
-            lt: 25,
+            gt: 20000,
+            lt: 35000,
             color: '#FBDB0F'
           },
           {
-            gt: 25,
-            lt: 35,
+            gt: 35000,
+            lt: 45000,
             color: '#FC7D02'
           },
           {
-            gt: 35,
-            lt: 45,
-            color: '#FD0100'
+            gt: 45000,
+            lt: 55000,
+            color: '#FD0100',
           },
           {
-            gt: 45,
+            gt: 55000,
             color: '#AA069F'
           }
         ],
@@ -114,113 +120,81 @@ export class RequestPowerComponent implements OnInit {
     option && myChart.setOption(option);
 
     setInterval(()=>{
-      console.log("onterval");
-      /* Récupère les données reçues par KARAF */
-      this.global.ws2ConsoHistory.onmessage = (event) => {
-        console.log("Receive conso: "+event.data);
-        let data = JSON.parse(event.data);
-        if(data[data.length-1].clef == this.global.clef){
-          this.global.dataJsonDemande = [];
-          if(data[data.length-1].frequence == 1){
-            for(let pointeur = 0; pointeur< data.length-1; pointeur++){
-              this.global.dataJsonDemande.push([data[pointeur].DATE, data[pointeur].CARBONINTENSITY])
-            }
+      var option= {
+        tooltip: {
+          trigger: 'axis'
+        },
+        grid:{
+          right: '15%'
+        },
+        xAxis: {
+          type: 'category'
+        },
+        yAxis: {
+          type: 'value'
+        },
+        toolbox: {
+          right: 10,
+          feature: {
+            dataZoom: {
+              yAxisIndex: 'none'
+            },
+            restore: {},
+            saveAsImage: {}
           }
-          else{
-            if(data[data.length-1].frequence == 2){
-              for(let pointeur: number = 0; pointeur< data.length-1; pointeur++){
-                let datePointeur: string = data[pointeur].DATE.split(" ");
-                let hourTab: string[] = datePointeur[1].split(":");
-                let thisHour: number = +hourTab[0]
-                if(thisHour%2==0){
-                  this.global.dataJsonDemande.push([data[pointeur].DATE, data[pointeur].CARBONINTENSITY])
-                }
-              }
-            }
-            else{
-              for(let pointeur = 0; pointeur< data.length-1; pointeur++){
-                let datePointeur: string = data[pointeur].DATE.split(" ");
-                let hourTab: string[] = datePointeur[1].split(":");
-                let thisHour: number = +hourTab[0]
-                if(thisHour%3==0){
-                  this.global.dataJsonDemande.push([data[pointeur].DATE, data[pointeur].CARBONINTENSITY])
-                }
-              }
-            }
+        },
+        dataZoom: [
+          {
+            startValue: this.dateDebString
+          },
+          {
+            type: 'inside'
           }
+        ],
+        visualMap: {
+          top: 50,
+          right: 10,
+          pieces: [
+            {
+              gt: 0,
+              lt: 20000,
+              color: '#93CE07'
+            },
+            {
+              gt: 20000,
+              lt: 35000,
+              color: '#FBDB0F'
+            },
+            {
+              gt: 35000,
+              lt: 45000,
+              color: '#FC7D02'
+            },
+            {
+              gt: 45000,
+              lt: 55000,
+              color: '#FD0100',
+            },
+            {
+              gt: 55000,
+              color: '#AA069F'
+            }
+          ],
+          outOfRange: {
+            color: '#999'
+          }
+        },
+        series: [
+          {
+            data: this.global.dataJsonDemande,
+            type: 'line',
+            smooth: true,
+            name: 'Conso'
+          }
+        ]
+      };
 
-          var option= {
-            tooltip: {
-              trigger: 'axis'
-            },
-            xAxis: {
-              type: 'category'
-            },
-            yAxis: {
-              type: 'value'
-            },
-            toolbox: {
-              right: 10,
-              feature: {
-                dataZoom: {
-                  yAxisIndex: 'none'
-                },
-                restore: {},
-                saveAsImage: {}
-              }
-            },
-            dataZoom: [
-              {
-                startValue: this.dateDebString
-              },
-              {
-                type: 'inside'
-              }
-            ],
-            visualMap: {
-              top: 50,
-              right: 10,
-              pieces: [
-                {
-                  gt: 0,
-                  lt: 15,
-                  color: '#93CE07'
-                },
-                {
-                  gt: 15,
-                  lt: 25,
-                  color: '#FBDB0F'
-                },
-                {
-                  gt: 25,
-                  lt: 35,
-                  color: '#FC7D02'
-                },
-                {
-                  gt: 35,
-                  lt: 45,
-                  color: '#FD0100'
-                },
-                {
-                  gt: 45,
-                  color: '#AA069F'
-                }
-              ],
-              outOfRange: {
-                color: '#999'
-              }
-            },
-            series: [
-              {
-                data: this.global.dataJsonDemande,
-                type: 'line',
-                smooth: true
-              }
-            ]
-          };
-          option && myChart.setOption(option);
-        }
-      }
+      option && myChart.setOption(option);
     },1000)
 
   }
@@ -239,9 +213,22 @@ export class RequestPowerComponent implements OnInit {
         let endDateSplit: string[]= endSplit[0].split("/");
         let sendEnd: string = endDateSplit[2] +"-"+endDateSplit[1]+"-"+endDateSplit[0];
         console.log("deb: "+sendStart+" 00:00:00     end: "+sendEnd+" 24:00:00")
-        this.global.wsConsoHistory.send(this.citySelected+','+this.hourSelected+','+sendStart+' 00:00:00,'+sendEnd+' 24:00:00,' + this.global.clef)
+        this.global.wsConsoHistory.send(this.citySelected+','+this.hourSelected+','+sendStart+' 00:00:00,'+sendEnd+' 24:00:00,' + this.global.clef);
+        this.global.dataJsonDemande = [];
       }
       console.log("demande carbon");
+    }
+  }
+
+  appelRoute(): void{
+    if (this.global.wsConsoHistory.readyState == WebSocket.OPEN && this.global.ws2ConsoHistory.readyState == WebSocket.OPEN) {
+      this.global.wsConsoHistory.send('Amiens,1, , ,' + this.global.clef)
+      console.log("demande des demandes");
+    }
+    else{
+      setTimeout(()=>{
+        this.appelRoute();
+      },500)
     }
   }
 

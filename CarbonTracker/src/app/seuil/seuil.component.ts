@@ -14,6 +14,12 @@ export class SeuilComponent implements OnInit {
   constructor(public global:VariablesGlobales) { }
 
   ngOnInit(): void {
+    const btns = document.querySelectorAll('.menuButton');
+    btns.forEach((btn) => {
+      btn.classList.remove('selected');
+    });
+    document.getElementById('Seuil')?.classList.add('selected');
+
     setInterval(()=>{
       /* Récupère les données reçues par KARAF */
       this.global.ws2newSeuil.onmessage = (event) => {

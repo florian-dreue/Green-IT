@@ -1,4 +1,5 @@
 <div class="content">
+  <h2>Historique de l'intensité carbon</h2>
   <div class="form">
     <mat-form-field>
       <mat-label>Ville</mat-label>
@@ -29,16 +30,16 @@
         <mat-option value="3">Toute les 3 heures</mat-option>
       </mat-select>
     </mat-form-field>
-    <mat-form-field>
+    <mat-form-field class="datePicker">
       <mat-label>Interval de temps</mat-label>
-      <mat-date-range-input class="datePicker" [formGroup]="range" [rangePicker]="picker">
+      <mat-date-range-input [formGroup]="range" [rangePicker]="picker">
         <input matStartDate formControlName="start" placeholder="Start date">
         <input matEndDate formControlName="end" placeholder="End date">
       </mat-date-range-input>
       <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
       <mat-date-range-picker #picker></mat-date-range-picker>
     </mat-form-field>
-    <button class="searchButton" mat-raised-button (click)="search()">Rechercher</button>
+    <button class="searchButton" mat-raised-button (click)="search()">Rechercher<mat-icon class="searchIcon" fontIcon="search"></mat-icon></button>
   </div>
   <div id="carbonGraph" class="graph"></div>
 </div>
