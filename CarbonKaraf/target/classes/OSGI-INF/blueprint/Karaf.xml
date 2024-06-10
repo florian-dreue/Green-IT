@@ -139,7 +139,15 @@
                         <setHeader name="POWEREXPORT"><simple>${body.get(${header.rowCount}).get('POWEREXPORT')}</simple></setHeader>
                         <setHeader name="CITY"><simple>${body.get(${header.rowCount}).get('CITY')}</simple></setHeader>
 
-                        <setHeader name="chaine"><simple>${header.chaine}{"DATE":"${header.DATE}","POWERCONSUMPTION":${header.POWERCONSUMPTION},"CITY":"${header.CITY}"}</simple></setHeader>
+                        <choice>
+                            <when>
+                                <simple>${header.POWEREXPORT} != null</simple>
+                                <setHeader name="chaine"><simple>${header.chaine}{"DATE":"${header.DATE}","POWERCONSUMPTION":${header.POWERCONSUMPTION},"POWERPRODUCTION":${header.POWERPRODUCTION},"POWEREXPORT":${header.POWEREXPORT},"CITY":"${header.CITY}"}</simple></setHeader>
+                            </when>
+                            <otherwise>
+                                <setHeader name="chaine"><simple>${header.chaine}{"DATE":"${header.DATE}","POWERCONSUMPTION":${header.POWERCONSUMPTION},"POWERPRODUCTION":${header.POWERPRODUCTION},"POWEREXPORT":0,"CITY":"${header.CITY}"}</simple></setHeader>
+                            </otherwise>
+                        </choice>
                     </when>
                     <otherwise>
                         <setHeader name="DATE"><simple>${body.get(${header.rowCount}).get('DATETEXTE')}</simple></setHeader>
@@ -149,7 +157,15 @@
                         <setHeader name="POWEREXPORT"><simple>${body.get(${header.rowCount}).get('POWEREXPORT')}</simple></setHeader>
                         <setHeader name="CITY"><simple>${body.get(${header.rowCount}).get('CITY')}</simple></setHeader>
 
-                        <setHeader name="chaine"><simple>${header.chaine},{"DATE":"${header.DATE}","POWERCONSUMPTION":${header.POWERCONSUMPTION},"CITY":"${header.CITY}"}</simple></setHeader>
+                        <choice>
+                            <when>
+                                <simple>${header.POWEREXPORT} != null</simple>
+                                <setHeader name="chaine"><simple>${header.chaine},{"DATE":"${header.DATE}","POWERCONSUMPTION":${header.POWERCONSUMPTION},"POWERPRODUCTION":${header.POWERPRODUCTION},"POWEREXPORT":${header.POWEREXPORT},"CITY":"${header.CITY}"}</simple></setHeader>
+                            </when>
+                            <otherwise>
+                                <setHeader name="chaine"><simple>${header.chaine},{"DATE":"${header.DATE}","POWERCONSUMPTION":${header.POWERCONSUMPTION},"POWERPRODUCTION":${header.POWERPRODUCTION},"POWEREXPORT":0,"CITY":"${header.CITY}"}</simple></setHeader>
+                            </otherwise>
+                        </choice>
                     </otherwise>
                 </choice>
             </loop>
@@ -1882,6 +1898,7 @@
             </loop>
 
         </route>
+
 
     </camelContext>
 

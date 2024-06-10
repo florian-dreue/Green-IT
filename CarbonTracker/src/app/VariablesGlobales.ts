@@ -12,6 +12,7 @@ export class VariablesGlobales {
   public clef: string = "";
   public nbAlertes: any;
   public dataAlerte: any;
+  public newConso: boolean = false;
 
   /**
    * Permet d'attendre un temps défini, avant de continuer le code

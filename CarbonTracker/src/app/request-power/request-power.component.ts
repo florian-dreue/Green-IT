@@ -67,6 +67,9 @@ export class RequestPowerComponent implements OnInit {
           saveAsImage: {}
         }
       },
+      legend: {
+        data: ['Conso','Prod','Export']
+      },
       dataZoom: [
         {
           startValue: this.dateDebString
@@ -75,44 +78,24 @@ export class RequestPowerComponent implements OnInit {
           type: 'inside'
         }
       ],
-      visualMap: {
-        top: 50,
-        right: 10,
-        pieces: [
-          {
-            gt: 0,
-            lt: 20000,
-            color: '#93CE07'
-          },
-          {
-            gt: 20000,
-            lt: 35000,
-            color: '#FBDB0F'
-          },
-          {
-            gt: 35000,
-            lt: 45000,
-            color: '#FC7D02'
-          },
-          {
-            gt: 45000,
-            lt: 55000,
-            color: '#FD0100',
-          },
-          {
-            gt: 55000,
-            color: '#AA069F'
-          }
-        ],
-        outOfRange: {
-          color: '#999'
-        }
-      },
       series: [
         {
           data: this.global.dataJsonDemande,
           type: 'line',
-          smooth: true
+          smooth: true,
+          name: 'Conso'
+        },
+        {
+          data: this.global.dataJsonProd,
+          type: 'line',
+          smooth: true,
+          name: 'Prod'
+        },
+        {
+          data: this.global.dataJsonExport,
+          type: 'line',
+          smooth: true,
+          name: 'Export'
         }
       ]
     };
@@ -120,81 +103,68 @@ export class RequestPowerComponent implements OnInit {
     option && myChart.setOption(option);
 
     setInterval(()=>{
-      var option= {
-        tooltip: {
-          trigger: 'axis'
-        },
-        grid:{
-          right: '15%'
-        },
-        xAxis: {
-          type: 'category'
-        },
-        yAxis: {
-          type: 'value'
-        },
-        toolbox: {
-          right: 10,
-          feature: {
-            dataZoom: {
-              yAxisIndex: 'none'
-            },
-            restore: {},
-            saveAsImage: {}
-          }
-        },
-        dataZoom: [
-          {
-            startValue: this.dateDebString
+      if(this.global.newConso){
+        console.log("maj Conso");
+        var option= {
+          tooltip: {
+            trigger: 'axis'
           },
-          {
-            type: 'inside'
-          }
-        ],
-        visualMap: {
-          top: 50,
-          right: 10,
-          pieces: [
+          grid:{
+            right: '15%'
+          },
+          xAxis: {
+            type: 'category'
+          },
+          yAxis: {
+            type: 'value'
+          },
+          toolbox: {
+            right: 10,
+            feature: {
+              dataZoom: {
+                yAxisIndex: 'none'
+              },
+              restore: {},
+              saveAsImage: {}
+            }
+          },
+          legend: {
+            data: ['Conso','Prod','Export']
+          },
+          dataZoom: [
             {
-              gt: 0,
-              lt: 20000,
-              color: '#93CE07'
+              startValue: this.dateDebString
             },
             {
-              gt: 20000,
-              lt: 35000,
-              color: '#FBDB0F'
-            },
-            {
-              gt: 35000,
-              lt: 45000,
-              color: '#FC7D02'
-            },
-            {
-              gt: 45000,
-              lt: 55000,
-              color: '#FD0100',
-            },
-            {
-              gt: 55000,
-              color: '#AA069F'
+              type: 'inside'
             }
           ],
-          outOfRange: {
-            color: '#999'
-          }
-        },
-        series: [
-          {
-            data: this.global.dataJsonDemande,
-            type: 'line',
-            smooth: true,
-            name: 'Conso'
-          }
-        ]
-      };
+          series: [
+            {
+              data: this.global.dataJsonDemande,
+              type: 'line',
+              smooth: true,
+              name: 'Conso'
+            },
+            {
+              data: this.global.dataJsonProd,
+              type: 'line',
+              smooth: true,
+              name: 'Prod'
+            },
+            {
+              data: this.global.dataJsonExport,
+              type: 'line',
+              smooth: true,
+              name: 'Export'
+            }
+          ]
+        };
 
-      option && myChart.setOption(option);
+        option && myChart.setOption(option);
+        this.global.newConso = false;
+      }
+
     },1000)
 
   }

@@ -42,7 +42,7 @@
             <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=49.90&amp;lon=2.3"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
-            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
 
             <choice>
                 <when>
@@ -127,11 +127,24 @@
                     <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
                     <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
 
-                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                    <script>
+                        <groovy>
+                            request.headers.zone = headers.zone != null ? headers.zone : 'FR';
+                            request.headers.consommation = headers.consommation != null ? headers.consommation : 0;
+                            request.headers.production = headers.production != null ? headers.production : 0;
+                            request.headers.import = headers.import != null ? headers.import : 0;
+                            request.headers.export = headers.export != null ? headers.export : 0;
+                            request.headers.renouvelable = headers.renouvelable != null ? headers.renouvelable : 0;
+                            request.headers.fossile = headers.fossile != null ? headers.fossile : 0;
+                        </groovy>
+                    </script>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
                 </when>
 
                 <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
             </loop>
+
         </route>
 
         <route id="APEL_API_CONSOMMATION_PARIS">
@@ -148,7 +161,7 @@
             <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=48.8566&amp;lon=2.3522"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
-            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
 
             <choice>
                 <when>
@@ -233,7 +246,19 @@
                     <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
                     <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
 
-                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                    <script>
+                        <groovy>
+                            request.headers.zone = headers.zone != null ? headers.zone : 'FR';
+                            request.headers.consommation = headers.consommation != null ? headers.consommation : 0;
+                            request.headers.production = headers.production != null ? headers.production : 0;
+                            request.headers.import = headers.import != null ? headers.import : 0;
+                            request.headers.export = headers.export != null ? headers.export : 0;
+                            request.headers.renouvelable = headers.renouvelable != null ? headers.renouvelable : 0;
+                            request.headers.fossile = headers.fossile != null ? headers.fossile : 0;
+                        </groovy>
+                    </script>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
                 </when>
 
                 <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
@@ -254,7 +279,7 @@
             <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=50.6365654&amp;lon=3.0635282"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
-            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
 
             <choice>
                 <when>
@@ -339,7 +364,19 @@
                     <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
                     <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
 
-                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                    <script>
+                        <groovy>
+                            request.headers.zone = headers.zone != null ? headers.zone : 'FR';
+                            request.headers.consommation = headers.consommation != null ? headers.consommation : 0;
+                            request.headers.production = headers.production != null ? headers.production : 0;
+                            request.headers.import = headers.import != null ? headers.import : 0;
+                            request.headers.export = headers.export != null ? headers.export : 0;
+                            request.headers.renouvelable = headers.renouvelable != null ? headers.renouvelable : 0;
+                            request.headers.fossile = headers.fossile != null ? headers.fossile : 0;
+                        </groovy>
+                    </script>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
                 </when>
 
                 <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
@@ -360,7 +397,7 @@
             <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=49.44&amp;lon=1.09"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
-            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
             <choice>
                 <when>
                     <simple>${body.size()} > 0</simple>
@@ -444,7 +481,19 @@
                     <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
                     <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
 
-                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                    <script>
+                        <groovy>
+                            request.headers.zone = headers.zone != null ? headers.zone : 'FR';
+                            request.headers.consommation = headers.consommation != null ? headers.consommation : 0;
+                            request.headers.production = headers.production != null ? headers.production : 0;
+                            request.headers.import = headers.import != null ? headers.import : 0;
+                            request.headers.export = headers.export != null ? headers.export : 0;
+                            request.headers.renouvelable = headers.renouvelable != null ? headers.renouvelable : 0;
+                            request.headers.fossile = headers.fossile != null ? headers.fossile : 0;
+                        </groovy>
+                    </script>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
                 </when>
 
                 <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
@@ -465,7 +514,7 @@
             <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=47.3215806&amp;lon=5.0414701"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
-            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
 
             <choice>
                 <when>
@@ -550,7 +599,19 @@
                     <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
                     <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
 
-                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                    <script>
+                        <groovy>
+                            request.headers.zone = headers.zone != null ? headers.zone : 'FR';
+                            request.headers.consommation = headers.consommation != null ? headers.consommation : 0;
+                            request.headers.production = headers.production != null ? headers.production : 0;
+                            request.headers.import = headers.import != null ? headers.import : 0;
+                            request.headers.export = headers.export != null ? headers.export : 0;
+                            request.headers.renouvelable = headers.renouvelable != null ? headers.renouvelable : 0;
+                            request.headers.fossile = headers.fossile != null ? headers.fossile : 0;
+                        </groovy>
+                    </script>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
                 </when>
 
                 <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
@@ -571,7 +632,7 @@
             <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=44.841225&amp;lon=-0.5800364"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
-            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
 
             <choice>
                 <when>
@@ -656,7 +717,19 @@
                     <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
                     <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
 
-                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                    <script>
+                        <groovy>
+                            request.headers.zone = headers.zone != null ? headers.zone : 'FR';
+                            request.headers.consommation = headers.consommation != null ? headers.consommation : 0;
+                            request.headers.production = headers.production != null ? headers.production : 0;
+                            request.headers.import = headers.import != null ? headers.import : 0;
+                            request.headers.export = headers.export != null ? headers.export : 0;
+                            request.headers.renouvelable = headers.renouvelable != null ? headers.renouvelable : 0;
+                            request.headers.fossile = headers.fossile != null ? headers.fossile : 0;
+                        </groovy>
+                    </script>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
                 </when>
 
                 <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
@@ -677,7 +750,7 @@
             <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=43.6044622&amp;lon=1.4442469"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
-            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
 
             <choice>
                 <when>
@@ -762,7 +835,19 @@
                     <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
                     <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
 
-                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                    <script>
+                        <groovy>
+                            request.headers.zone = headers.zone != null ? headers.zone : 'FR';
+                            request.headers.consommation = headers.consommation != null ? headers.consommation : 0;
+                            request.headers.production = headers.production != null ? headers.production : 0;
+                            request.headers.import = headers.import != null ? headers.import : 0;
+                            request.headers.export = headers.export != null ? headers.export : 0;
+                            request.headers.renouvelable = headers.renouvelable != null ? headers.renouvelable : 0;
+                            request.headers.fossile = headers.fossile != null ? headers.fossile : 0;
+                        </groovy>
+                    </script>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
                 </when>
 
                 <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
@@ -783,7 +868,7 @@
             <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=45.7578137&amp;lon=4.8320114"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
-            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
 
             <choice>
                 <when>
@@ -868,7 +953,19 @@
                     <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
                     <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
 
-                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                    <script>
+                        <groovy>
+                            request.headers.zone = headers.zone != null ? headers.zone : 'FR';
+                            request.headers.consommation = headers.consommation != null ? headers.consommation : 0;
+                            request.headers.production = headers.production != null ? headers.production : 0;
+                            request.headers.import = headers.import != null ? headers.import : 0;
+                            request.headers.export = headers.export != null ? headers.export : 0;
+                            request.headers.renouvelable = headers.renouvelable != null ? headers.renouvelable : 0;
+                            request.headers.fossile = headers.fossile != null ? headers.fossile : 0;
+                        </groovy>
+                    </script>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
                 </when>
 
                 <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
@@ -889,7 +986,7 @@
             <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=48.584614&amp;lon=7.7507127"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
-            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
 
             <choice>
                 <when>
@@ -974,7 +1071,19 @@
                     <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
                     <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
 
-                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                    <script>
+                        <groovy>
+                            request.headers.zone = headers.zone != null ? headers.zone : 'FR';
+                            request.headers.consommation = headers.consommation != null ? headers.consommation : 0;
+                            request.headers.production = headers.production != null ? headers.production : 0;
+                            request.headers.import = headers.import != null ? headers.import : 0;
+                            request.headers.export = headers.export != null ? headers.export : 0;
+                            request.headers.renouvelable = headers.renouvelable != null ? headers.renouvelable : 0;
+                            request.headers.fossile = headers.fossile != null ? headers.fossile : 0;
+                        </groovy>
+                    </script>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
                 </when>
 
                 <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
@@ -995,7 +1104,7 @@
             <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=41.9263991&amp;lon=8.7376029"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
-            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
 
             <choice>
                 <when>
@@ -1080,7 +1189,19 @@
                     <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
                     <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
 
-                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                    <script>
+                        <groovy>
+                            request.headers.zone = headers.zone != null ? headers.zone : 'FR';
+                            request.headers.consommation = headers.consommation != null ? headers.consommation : 0;
+                            request.headers.production = headers.production != null ? headers.production : 0;
+                            request.headers.import = headers.import != null ? headers.import : 0;
+                            request.headers.export = headers.export != null ? headers.export : 0;
+                            request.headers.renouvelable = headers.renouvelable != null ? headers.renouvelable : 0;
+                            request.headers.fossile = headers.fossile != null ? headers.fossile : 0;
+                        </groovy>
+                    </script>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
                 </when>
 
                 <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
@@ -1101,7 +1222,7 @@
             <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=43.2961743&amp;lon=5.3699525"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
-            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
 
             <choice>
                 <when>
@@ -1186,7 +1307,19 @@
                     <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
                     <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
 
-                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                    <script>
+                        <groovy>
+                            request.headers.zone = headers.zone != null ? headers.zone : 'FR';
+                            request.headers.consommation = headers.consommation != null ? headers.consommation : 0;
+                            request.headers.production = headers.production != null ? headers.production : 0;
+                            request.headers.import = headers.import != null ? headers.import : 0;
+                            request.headers.export = headers.export != null ? headers.export : 0;
+                            request.headers.renouvelable = headers.renouvelable != null ? headers.renouvelable : 0;
+                            request.headers.fossile = headers.fossile != null ? headers.fossile : 0;
+                        </groovy>
+                    </script>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
                 </when>
 
                 <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
@@ -1207,7 +1340,7 @@
             <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=48.1113387&amp;lon=-1.6800198"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
-            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
 
             <choice>
                 <when>
@@ -1292,7 +1425,19 @@
                     <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
                     <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
 
-                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                    <script>
+                        <groovy>
+                            request.headers.zone = headers.zone != null ? headers.zone : 'FR';
+                            request.headers.consommation = headers.consommation != null ? headers.consommation : 0;
+                            request.headers.production = headers.production != null ? headers.production : 0;
+                            request.headers.import = headers.import != null ? headers.import : 0;
+                            request.headers.export = headers.export != null ? headers.export : 0;
+                            request.headers.renouvelable = headers.renouvelable != null ? headers.renouvelable : 0;
+                            request.headers.fossile = headers.fossile != null ? headers.fossile : 0;
+                        </groovy>
+                    </script>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
                 </when>
 
                 <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
@@ -1313,7 +1458,7 @@
             <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=47.9027336&amp;lon=1.9086066"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
-            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
 
             <choice>
                 <when>
@@ -1398,7 +1543,19 @@
                     <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
                     <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
 
-                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                    <script>
+                        <groovy>
+                            request.headers.zone = headers.zone != null ? headers.zone : 'FR';
+                            request.headers.consommation = headers.consommation != null ? headers.consommation : 0;
+                            request.headers.production = headers.production != null ? headers.production : 0;
+                            request.headers.import = headers.import != null ? headers.import : 0;
+                            request.headers.export = headers.export != null ? headers.export : 0;
+                            request.headers.renouvelable = headers.renouvelable != null ? headers.renouvelable : 0;
+                            request.headers.fossile = headers.fossile != null ? headers.fossile : 0;
+                        </groovy>
+                    </script>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
                 </when>
 
                 <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
@@ -1419,7 +1576,7 @@
             <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=47.2186371&amp;lon=-1.5541362"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
-            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
 
             <choice>
                 <when>
@@ -1504,7 +1661,19 @@
                     <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
                     <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
 
-                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                    <script>
+                        <groovy>
+                            request.headers.zone = headers.zone != null ? headers.zone : 'FR';
+                            request.headers.consommation = headers.consommation != null ? headers.consommation : 0;
+                            request.headers.production = headers.production != null ? headers.production : 0;
+                            request.headers.import = headers.import != null ? headers.import : 0;
+                            request.headers.export = headers.export != null ? headers.export : 0;
+                            request.headers.renouvelable = headers.renouvelable != null ? headers.renouvelable : 0;
+                            request.headers.fossile = headers.fossile != null ? headers.fossile : 0;
+                        </groovy>
+                    </script>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
                 </when>
 
                 <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>
@@ -1525,7 +1694,7 @@
             <to uri="https://api.electricitymap.org/v3/power-breakdown/history?lat=40.7127281&amp;lon=-74.0060152"/>
             <setHeader name="History"><jsonpath>$.history</jsonpath></setHeader>
 
-            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L2db"/>
+            <to uri="sql:SELECT * FROM (SELECT * from GREENIT.POWERCONSUMPTIONHISTORY WHERE CITY=:#city ORDER BY DATETEXTE DESC) WHERE ROWNUM = 1?dataSource=ds_L1db"/>
 
             <choice>
                 <when>
@@ -1610,7 +1779,19 @@
                     <setHeader name="renouvelable"><simple>${header.History[${header.pointeur}]['renewablePercentage']}</simple></setHeader>
                     <setHeader name="fossile"><simple>${header.History[${header.pointeur}]['fossilFreePercentage']}</simple></setHeader>
 
-                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L2db"/>
+                    <script>
+                        <groovy>
+                            request.headers.zone = headers.zone != null ? headers.zone : 'FR';
+                            request.headers.consommation = headers.consommation != null ? headers.consommation : 0;
+                            request.headers.production = headers.production != null ? headers.production : 0;
+                            request.headers.import = headers.import != null ? headers.import : 0;
+                            request.headers.export = headers.export != null ? headers.export : 0;
+                            request.headers.renouvelable = headers.renouvelable != null ? headers.renouvelable : 0;
+                            request.headers.fossile = headers.fossile != null ? headers.fossile : 0;
+                        </groovy>
+                    </script>
+
+                    <to uri="sql:INSERT INTO POWERCONSUMPTIONHISTORY (ZONE, CITY, DATETEXTE, POWERCONSUMPTION, POWERPRODUCTION, POWERIMPORT, POWEREXPORT, RENEWABLEPERCENT,FOSSILFREEPERCENT) VALUES(:#zone, :#city, :#newDate, :#consommation, :#production, :#import, :#export, :#renouvelable, :#fossile)?dataSource=ds_L1db"/>
                 </when>
 
                 <setHeader name="pointeur"><simple resultType="java.lang.Integer">${header.pointeur}++</simple></setHeader>

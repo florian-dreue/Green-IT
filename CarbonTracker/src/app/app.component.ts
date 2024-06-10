@@ -131,6 +131,7 @@ export class AppComponent implements OnInit {
           this.global.dataJsonExport = [];
           if(data[data.length-1].frequence == 1){
             for(let pointeur = 0; pointeur< data.length-1; pointeur++){
+              console.log("Object= "+Object.keys(data[pointeur]));
               if(data[pointeur].DATE && data[pointeur].POWERCONSUMPTION) {
                 this.global.dataJsonDemande.push([data[pointeur].DATE, data[pointeur].POWERCONSUMPTION]);
                 this.global.dataJsonProd.push([data[pointeur].DATE, data[pointeur].POWERPRODUCTION]);
@@ -169,6 +170,7 @@ export class AppComponent implements OnInit {
             }
           }
         }
+        this.global.newConso = true;
       }
     }, 1000)
   }
