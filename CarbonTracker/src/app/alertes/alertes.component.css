@@ -2,6 +2,7 @@
   position: sticky;
   z-index:1;
   height: 80vh;
+  background-color: var(--background-page-color) ;
 }
 
 .containerTable {
@@ -29,6 +30,6 @@
 }
 
 h1{
-  margin-top: 2vh;
+  padding-top: 2vh;
   text-align: center;
 }

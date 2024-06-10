@@ -32,7 +32,7 @@
     </mat-form-field>
     <mat-form-field class="datePicker">
       <mat-label>Interval de temps</mat-label>
-      <mat-date-range-input [formGroup]="range" [rangePicker]="picker">
+      <mat-date-range-input [formGroup]="range" [rangePicker]="picker" [max]="dateNow">
         <input matStartDate formControlName="start" placeholder="Start date">
         <input matEndDate formControlName="end" placeholder="End date">
       </mat-date-range-input>

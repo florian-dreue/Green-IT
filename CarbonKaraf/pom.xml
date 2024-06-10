@@ -22,7 +22,7 @@
 
     <groupId>UPJV.miage</groupId>
     <artifactId>CarbonKaraf</artifactId>
-    <version>1.5</version>
+    <version>1.6</version>
     <packaging>bundle</packaging>
 
     <name>CarbonKaraf Blueprint Bundle</name>

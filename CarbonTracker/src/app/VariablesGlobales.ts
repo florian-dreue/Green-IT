@@ -9,6 +9,7 @@ export class VariablesGlobales {
   public dataJsonDemande: any;
   public dataJsonProd: any;
   public dataJsonExport: any;
+  public dataJsonRenewable: any;
   public clef: string = "";
   public nbAlertes: any;
   public dataAlerte: any;

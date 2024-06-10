@@ -142,10 +142,10 @@
                         <choice>
                             <when>
                                 <simple>${header.POWEREXPORT} != null</simple>
-                                <setHeader name="chaine"><simple>${header.chaine}{"DATE":"${header.DATE}","POWERCONSUMPTION":${header.POWERCONSUMPTION},"POWERPRODUCTION":${header.POWERPRODUCTION},"POWEREXPORT":${header.POWEREXPORT},"CITY":"${header.CITY}"}</simple></setHeader>
+                                <setHeader name="chaine"><simple>${header.chaine}{"DATE":"${header.DATE}","POWERCONSUMPTION":${header.POWERCONSUMPTION},"POWERPRODUCTION":${header.POWERPRODUCTION},"POWEREXPORT":${header.POWEREXPORT},"RENEWABLEPERCENT":${header.RENEWABLEPERCENT},"CITY":"${header.CITY}"}</simple></setHeader>
                             </when>
                             <otherwise>
-                                <setHeader name="chaine"><simple>${header.chaine}{"DATE":"${header.DATE}","POWERCONSUMPTION":${header.POWERCONSUMPTION},"POWERPRODUCTION":${header.POWERPRODUCTION},"POWEREXPORT":0,"CITY":"${header.CITY}"}</simple></setHeader>
+                                <setHeader name="chaine"><simple>${header.chaine}{"DATE":"${header.DATE}","POWERCONSUMPTION":${header.POWERCONSUMPTION},"POWERPRODUCTION":${header.POWERPRODUCTION},"POWEREXPORT":0,"RENEWABLEPERCENT":${header.RENEWABLEPERCENT},"CITY":"${header.CITY}"}</simple></setHeader>
                             </otherwise>
                         </choice>
                     </when>
@@ -160,10 +160,10 @@
                         <choice>
                             <when>
                                 <simple>${header.POWEREXPORT} != null</simple>
-                                <setHeader name="chaine"><simple>${header.chaine},{"DATE":"${header.DATE}","POWERCONSUMPTION":${header.POWERCONSUMPTION},"POWERPRODUCTION":${header.POWERPRODUCTION},"POWEREXPORT":${header.POWEREXPORT},"CITY":"${header.CITY}"}</simple></setHeader>
+                                <setHeader name="chaine"><simple>${header.chaine},{"DATE":"${header.DATE}","POWERCONSUMPTION":${header.POWERCONSUMPTION},"POWERPRODUCTION":${header.POWERPRODUCTION},"POWEREXPORT":${header.POWEREXPORT},"RENEWABLEPERCENT":${header.RENEWABLEPERCENT},"CITY":"${header.CITY}"}</simple></setHeader>
                             </when>
                             <otherwise>
-                                <setHeader name="chaine"><simple>${header.chaine},{"DATE":"${header.DATE}","POWERCONSUMPTION":${header.POWERCONSUMPTION},"POWERPRODUCTION":${header.POWERPRODUCTION},"POWEREXPORT":0,"CITY":"${header.CITY}"}</simple></setHeader>
+                                <setHeader name="chaine"><simple>${header.chaine},{"DATE":"${header.DATE}","POWERCONSUMPTION":${header.POWERCONSUMPTION},"POWERPRODUCTION":${header.POWERPRODUCTION},"POWEREXPORT":0,"RENEWABLEPERCENT":${header.RENEWABLEPERCENT},"CITY":"${header.CITY}"}</simple></setHeader>
                             </otherwise>
                         </choice>
                     </otherwise>
@@ -330,17 +330,13 @@
                 <choice>
                     <when>
                         <simple>${header.month} > ${header.lastMonth}</simple>
-
-                        <setHeader name="zone"><simple>${header.HistoryParis[${header.pointeur}]['zone']}</simple></setHeader>
+                        
                         <setHeader name="carbonIntensity"><simple>${header.HistoryParis[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryParis[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryParis[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryParis[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Paris</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">48.8566</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">2.3522</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <when>
                             <simple>${header.seuil} &amp;&amp; ${header.seuil} &lt; ${header.carbonIntensity}</simple>
@@ -353,16 +349,13 @@
                     <when>
                         <simple>${header.day} > ${header.lastDateDay}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryParis[${header.pointeur}]['zone']}</simple></setHeader>
+                        
                         <setHeader name="carbonIntensity"><simple>${header.HistoryParis[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryParis[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryParis[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryParis[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Paris</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">48.8566</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">2.3522</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <when>
                             <simple>${header.seuil} &amp;&amp; ${header.seuil} &lt; ${header.carbonIntensity}</simple>
@@ -375,16 +368,13 @@
                     <when>
                         <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryParis[${header.pointeur}]['zone']}</simple></setHeader>
+                        
                         <setHeader name="carbonIntensity"><simple>${header.HistoryParis[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryParis[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryParis[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryParis[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Paris</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">48.8566</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">2.3522</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <when>
                             <simple>${header.seuil} &amp;&amp; ${header.seuil} &lt; ${header.carbonIntensity}</simple>
@@ -452,16 +442,12 @@
                     <when>
                         <simple>${header.month} > ${header.lastMonth}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryAmiens[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryAmiens[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryAmiens[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryAmiens[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryAmiens[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Amiens</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">49.90</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">2.3</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="seuil: ${header.seuil}"/>
                         <when>
@@ -475,16 +461,12 @@
                     <when>
                         <simple>${header.day} > ${header.lastDateDay}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryAmiens[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryAmiens[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryAmiens[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryAmiens[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryAmiens[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Amiens</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">49.90</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">2.3</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="seuil: ${header.seuil}"/>
                         <when>
@@ -498,16 +480,12 @@
                     <when>
                         <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryAmiens[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryAmiens[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryAmiens[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryAmiens[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryAmiens[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Amiens</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">49.90</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">2.3</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="seuil: ${header.seuil}"/>
                         <when>
@@ -576,16 +554,12 @@
                     <when>
                         <simple>${header.month} > ${header.lastMonth}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryLille[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryLille[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryLille[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryLille[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryLille[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Lille</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">50.6365654</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">3.0635282</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <when>
                             <simple>${header.seuil} &amp;&amp; ${header.seuil} &lt; ${header.carbonIntensity}</simple>
@@ -598,16 +572,12 @@
                     <when>
                         <simple>${header.day} > ${header.lastDateDay}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryLille[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryLille[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryLille[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryLille[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryLille[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Lille</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">50.6365654</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">3.0635282</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <when>
                             <simple>${header.seuil} &amp;&amp; ${header.seuil} &lt; ${header.carbonIntensity}</simple>
@@ -620,16 +590,12 @@
                     <when>
                         <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryLille[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryLille[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryLille[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryLille[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryLille[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Lille</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">50.6365654</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">3.0635282</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <when>
                             <simple>${header.seuil} &amp;&amp; ${header.seuil} &lt; ${header.carbonIntensity}</simple>
@@ -702,48 +668,36 @@
                     <when>
                         <simple>${header.month} > ${header.lastMonth}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryRouen[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryRouen[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryRouen[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryRouen[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryRouen[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Rouen</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">49.44</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">1.09</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.month} > ${header.lastMonth}"/>
                     </when>
                     <when>
                         <simple>${header.day} > ${header.lastDateDay}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryRouen[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryRouen[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryRouen[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryRouen[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryRouen[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Rouen</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">49.44</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">1.09</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
                     </when>
                     <when>
                         <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryRouen[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryRouen[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryRouen[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryRouen[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryRouen[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Rouen</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">49.44</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">1.09</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
                     </when>
@@ -804,48 +758,36 @@
                     <when>
                         <simple>${header.month} > ${header.lastMonth}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryDijon[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryDijon[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryDijon[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryDijon[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryDijon[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Dijon</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">47.3215806</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">5.0414701</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.month} > ${header.lastMonth}"/>
                     </when>
                     <when>
                         <simple>${header.day} > ${header.lastDateDay}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryDijon[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryDijon[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryDijon[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryDijon[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryDijon[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Dijon</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">47.3215806</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">5.0414701</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
                     </when>
                     <when>
                         <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryDijon[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryDijon[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryDijon[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryDijon[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryDijon[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Dijon</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">47.3215806</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">5.0414701</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
                     </when>
@@ -906,48 +848,36 @@
                     <when>
                         <simple>${header.month} > ${header.lastMonth}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryBordeaux[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryBordeaux[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryBordeaux[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryBordeaux[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryBordeaux[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Bordeaux</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">44.841225</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">-0.5800364</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.month} > ${header.lastMonth}"/>
                     </when>
                     <when>
                         <simple>${header.day} > ${header.lastDateDay}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryBordeaux[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryBordeaux[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryBordeaux[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryBordeaux[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryBordeaux[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Bordeaux</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">44.841225</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">-0.5800364</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
                     </when>
                     <when>
                         <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryBordeaux[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryBordeaux[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryBordeaux[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryBordeaux[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryBordeaux[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Bordeaux</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">44.841225</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">-0.5800364</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
                     </when>
@@ -1015,48 +945,36 @@
                     <when>
                         <simple>${header.month} > ${header.lastMonth}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryToulouse[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryToulouse[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryToulouse[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryToulouse[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryToulouse[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Toulouse</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">43.6044622</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">1.4442469</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.month} > ${header.lastMonth}"/>
                     </when>
                     <when>
                         <simple>${header.day} > ${header.lastDateDay}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryToulouse[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryToulouse[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryToulouse[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryToulouse[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryToulouse[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Toulouse</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">43.6044622</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">1.4442469</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
                     </when>
                     <when>
                         <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryToulouse[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryToulouse[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryToulouse[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryToulouse[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryToulouse[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Toulouse</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">43.6044622</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">1.4442469</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
                     </when>
@@ -1118,48 +1036,36 @@
                     <when>
                         <simple>${header.month} > ${header.lastMonth}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryLyon[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryLyon[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryLyon[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryLyon[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryLyon[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Lyon</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">45.7578137</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">4.8320114</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.month} > ${header.lastMonth}"/>
                     </when>
                     <when>
                         <simple>${header.day} > ${header.lastDateDay}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryLyon[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryLyon[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryLyon[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryLyon[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryLyon[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Lyon</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">45.7578137</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">4.8320114</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
                     </when>
                     <when>
                         <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryLyon[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryLyon[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryLyon[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryLyon[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryLyon[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Lyon</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">45.7578137</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">4.8320114</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
                     </when>
@@ -1221,48 +1127,36 @@
                     <when>
                         <simple>${header.month} > ${header.lastMonth}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryStrasbourg[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryStrasbourg[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryStrasbourg[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryStrasbourg[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryStrasbourg[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Strasbourg</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">48.584614</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">7.7507127</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.month} > ${header.lastMonth}"/>
                     </when>
                     <when>
                         <simple>${header.day} > ${header.lastDateDay}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryStrasbourg[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryStrasbourg[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryStrasbourg[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryStrasbourg[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryStrasbourg[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Strasbourg</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">48.584614</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">7.7507127</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
                     </when>
                     <when>
                         <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryStrasbourg[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryStrasbourg[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryStrasbourg[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryStrasbourg[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryStrasbourg[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Strasbourg</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">48.584614</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">7.7507127</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
                     </when>
@@ -1330,48 +1224,36 @@
                     <when>
                         <simple>${header.month} > ${header.lastMonth}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryAjaccio[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryAjaccio[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryAjaccio[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryAjaccio[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryAjaccio[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Ajaccio</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">41.9263991</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">8.7376029</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.month} > ${header.lastMonth}"/>
                     </when>
                     <when>
                         <simple>${header.day} > ${header.lastDateDay}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryAjaccio[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryAjaccio[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryAjaccio[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryAjaccio[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryAjaccio[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Ajaccio</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">41.9263991</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">8.7376029</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
                     </when>
                     <when>
                         <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryAjaccio[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryAjaccio[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryAjaccio[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryAjaccio[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryAjaccio[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Ajaccio</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">41.9263991</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">8.7376029</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
                     </when>
@@ -1432,48 +1314,36 @@
                     <when>
                         <simple>${header.month} > ${header.lastMonth}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryMarseille[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryMarseille[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryMarseille[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryMarseille[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryMarseille[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Marseille</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">43.2961743</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">5.3699525</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.month} > ${header.lastMonth}"/>
                     </when>
                     <when>
                         <simple>${header.day} > ${header.lastDateDay}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryMarseille[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryMarseille[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryMarseille[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryMarseille[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryMarseille[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Marseille</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">43.2961743</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">5.3699525</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
                     </when>
                     <when>
                         <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryMarseille[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryMarseille[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryMarseille[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryMarseille[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryMarseille[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Marseille</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">43.2961743</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">5.3699525</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
                     </when>
@@ -1534,48 +1404,36 @@
                     <when>
                         <simple>${header.month} > ${header.lastMonth}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryRennes[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryRennes[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryRennes[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryRennes[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryRennes[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Rennes</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">48.1113387</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">-1.6800198</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.month} > ${header.lastMonth}"/>
                     </when>
                     <when>
                         <simple>${header.day} > ${header.lastDateDay}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryRennes[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryRennes[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryRennes[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryRennes[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryRennes[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Rennes</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">48.1113387</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">-1.6800198</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
                     </when>
                     <when>
                         <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryRennes[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryRennes[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryRennes[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryRennes[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryRennes[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Rennes</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">48.1113387</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">-1.6800198</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
                     </when>
@@ -1643,48 +1501,36 @@
                     <when>
                         <simple>${header.month} > ${header.lastMonth}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryOrleans[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryOrleans[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryOrleans[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryOrleans[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryOrleans[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Orléans</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">47.9027336</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">1.9086066</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.month} > ${header.lastMonth}"/>
                     </when>
                     <when>
                         <simple>${header.day} > ${header.lastDateDay}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryOrleans[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryOrleans[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryOrleans[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryOrleans[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryOrleans[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Orléans</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">47.9027336</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">1.9086066</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
                     </when>
                     <when>
                         <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryOrleans[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryOrleans[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryOrleans[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryOrleans[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryOrleans[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Orléans</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">47.9027336</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">1.9086066</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
                     </when>
@@ -1745,48 +1591,36 @@
                     <when>
                         <simple>${header.month} > ${header.lastMonth}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryNantes[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryNantes[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryNantes[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryNantes[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryNantes[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Nantes</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">47.2186371</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">-1.5541362</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.month} > ${header.lastMonth}"/>
                     </when>
                     <when>
                         <simple>${header.day} > ${header.lastDateDay}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryNantes[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryNantes[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryNantes[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryNantes[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryNantes[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Nantes</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">47.2186371</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">-1.5541362</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
                     </when>
                     <when>
                         <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryNantes[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryNantes[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryNantes[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryNantes[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryNantes[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>Nantes</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">47.2186371</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">-1.5541362</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
                     </when>
@@ -1847,48 +1681,36 @@
                     <when>
                         <simple>${header.month} > ${header.lastMonth}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryNewYork[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryNewYork[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryNewYork[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryNewYork[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryNewYork[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>New York</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">40.7127281</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">-74.0060152</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.month} > ${header.lastMonth}"/>
                     </when>
                     <when>
                         <simple>${header.day} > ${header.lastDateDay}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryNewYork[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryNewYork[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryNewYork[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryNewYork[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryNewYork[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>New York</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">40.7127281</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">-74.0060152</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.day} > ${header.lastDateDay}"/>
                     </when>
                     <when>
                         <simple>${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}</simple>
 
-                        <setHeader name="zone"><simple>${header.HistoryNewYork[${header.pointeur}]['zone']}</simple></setHeader>
                         <setHeader name="carbonIntensity"><simple>${header.HistoryNewYork[${header.pointeur}]['carbonIntensity']}</simple></setHeader>
-                        <setHeader name="emissionFactorType"><simple>${header.HistoryNewYork[${header.pointeur}]['emissionFactorType']}</simple></setHeader>
-                        <setHeader name="isEstimated"><simple>${header.HistoryNewYork[${header.pointeur}]['isEstimated']}</simple></setHeader>
-                        <setHeader name="estimationMethod"><simple>${header.HistoryNewYork[${header.pointeur}]['estimationMethod']}</simple></setHeader>
                         <setHeader name="city"><simple>New York</simple></setHeader>
                         <setHeader name="latitude"><simple resultType="java.lang.Float">40.7127281</simple></setHeader>
                         <setHeader name="longitude"><simple resultType="java.lang.Float">-74.0060152</simple></setHeader>
 
-                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (ZONE, EMISSIONFACTORYTYPE, CARBONINTENSITY, ISESTIMATED, CITY, ESTIMATIONMETHOD,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#zone, :#emissionFactorType, :#carbonIntensity, :#isEstimated, :#city, :#estimationMethod, :#latitude, :#longitude, :#newDate)?dataSource=ds_L1db"/>
+                        <to uri="sql:INSERT INTO CARBONINTENSITYHISTORY (CARBONINTENSITY,CITY,LATITUDE,LONGITUDE, DATETEXTE) VALUES(:#carbonIntensity,:#city,:#latitude,:#longitude,:#newDate)?dataSource=ds_L1db"/>
 
                         <log message="supérieur ${header.day} == ${header.lastDateDay} &amp;&amp; ${header.hour} > ${header.lastHour}"/>
                     </when>

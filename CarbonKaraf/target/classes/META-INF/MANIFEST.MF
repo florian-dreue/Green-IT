@@ -1,5 +1,5 @@
 Manifest-Version: 1.0
-Bnd-LastModified: 1717967439511
+Bnd-LastModified: 1718036139943
 Build-Jdk: 11.0.22
 Built-By: Florian
 Bundle-Blueprint: OSGI-INF/blueprint/Consommation.xml,OSGI-INF/blueprint
@@ -8,7 +8,7 @@ Bundle-Description: CarbonKaraf OSGi blueprint bundle project.
 Bundle-ManifestVersion: 2
 Bundle-Name: CarbonKaraf Blueprint Bundle
 Bundle-SymbolicName: CarbonKaraf
-Bundle-Version: 1.5
+Bundle-Version: 1.6
 Created-By: Apache Maven Bundle Plugin
 DynamicImport-Package: *
 Import-Package: javax.sql,org.osgi.service.blueprint;version="[1.0.0,2.0

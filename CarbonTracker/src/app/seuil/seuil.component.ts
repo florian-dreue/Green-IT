@@ -21,7 +21,7 @@ export class SeuilComponent implements OnInit {
     document.getElementById('Seuil')?.classList.add('selected');
 
     setInterval(()=>{
-      /* Récupère les données reçues par KARAF */
+      /* Récupère les données reçues par KARAF*/
       this.global.ws2newSeuil.onmessage = (event) => {
         console.log("data receive: "+event.data);
         let data = JSON.parse(event.data);

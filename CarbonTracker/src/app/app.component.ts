@@ -129,19 +129,24 @@ export class AppComponent implements OnInit {
           this.global.dataJsonDemande = [];
           this.global.dataJsonProd = [];
           this.global.dataJsonExport = [];
+          this.global.dataJsonRenewable = [];
+          let renewable;
           if(data[data.length-1].frequence == 1){
             for(let pointeur = 0; pointeur< data.length-1; pointeur++){
-              console.log("Object= "+Object.keys(data[pointeur]));
+              renewable = data[pointeur].RENEWABLEPERCENT*data[pointeur].POWERCONSUMPTION/100;
+              console.log("renewable= "+renewable+ " : "+data[pointeur].RENEWABLEPERCENT +" + "+data[pointeur].POWERCONSUMPTION+ " = "+data[pointeur].RENEWABLEPERCENT/data[pointeur].POWERCONSUMPTION);
               if(data[pointeur].DATE && data[pointeur].POWERCONSUMPTION) {
                 this.global.dataJsonDemande.push([data[pointeur].DATE, data[pointeur].POWERCONSUMPTION]);
                 this.global.dataJsonProd.push([data[pointeur].DATE, data[pointeur].POWERPRODUCTION]);
                 this.global.dataJsonExport.push([data[pointeur].DATE, data[pointeur].POWEREXPORT]);
+                this.global.dataJsonRenewable.push([data[pointeur].DATE, renewable]);
               }
             }
           }
           else{
             if(data[data.length-1].frequence == 2){
               for(let pointeur: number = 0; pointeur< data.length-1; pointeur++){
+                renewable = data[pointeur].RENEWABLEPERCENT*data[pointeur].POWERCONSUMPTION/100;
                 if(data[pointeur].DATE && data[pointeur].POWERCONSUMPTION) {
                   let datePointeur: string = data[pointeur].DATE.split(" ");
                   let hourTab: string[] = datePointeur[1].split(":");
@@ -150,12 +155,14 @@ export class AppComponent implements OnInit {
                     this.global.dataJsonDemande.push([data[pointeur].DATE, data[pointeur].POWERCONSUMPTION]);
                     this.global.dataJsonProd.push([data[pointeur].DATE, data[pointeur].POWERPRODUCTION]);
                     this.global.dataJsonExport.push([data[pointeur].DATE, data[pointeur].POWEREXPORT]);
+                    this.global.dataJsonRenewable.push([data[pointeur].DATE, renewable]);
                   }
                 }
               }
             }
             else{
               for(let pointeur = 0; pointeur< data.length-1; pointeur++){
+                renewable = data[pointeur].RENEWABLEPERCENT*data[pointeur].POWERCONSUMPTION/100;
                 if(data[pointeur].DATE && data[pointeur].POWERCONSUMPTION) {
                   let datePointeur: string = data[pointeur].DATE.split(" ");
                   let hourTab: string[] = datePointeur[1].split(":");
@@ -164,6 +171,7 @@ export class AppComponent implements OnInit {
                     this.global.dataJsonDemande.push([data[pointeur].DATE, data[pointeur].POWERCONSUMPTION]);
                     this.global.dataJsonProd.push([data[pointeur].DATE, data[pointeur].POWERPRODUCTION]);
                     this.global.dataJsonExport.push([data[pointeur].DATE, data[pointeur].POWEREXPORT]);
+                    this.global.dataJsonRenewable.push([data[pointeur].DATE, renewable]);
                   }
                 }
               }

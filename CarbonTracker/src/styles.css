@@ -15,19 +15,19 @@ body:before{
 
 :root{
   --text-color : #212E53;
-  --background-color : #93E1F0;
+  --background-color : #82F2A7;
   --btn-valid-color : #82F2A7;
   --btn-cancel-color : #EE2449;
   --btn-modified: #F8B878;
   --btn-color: aliceblue;
   --text-shadow : rgb(37, 31, 6);
   --background-color-white : rgba(255, 255, 255, 0.8);
-  --background-page-color: #f0f8ff;
+  --background-page-color: #f2fff6;
   --light--color: #CEF1F9;
   --border-color: #00B6DA;
   --selected-color: #05D5AA;
   --input-color: #B6CDE8;
-  --color-selected: #7fc0cd;
+  --color-selected: #6ac98a;
 }
 
 @font-face {

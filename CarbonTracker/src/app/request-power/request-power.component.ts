@@ -68,7 +68,7 @@ export class RequestPowerComponent implements OnInit {
         }
       },
       legend: {
-        data: ['Conso','Prod','Export']
+        data: ['Conso','Prod','Export','Renouvelable']
       },
       dataZoom: [
         {
@@ -96,6 +96,12 @@ export class RequestPowerComponent implements OnInit {
           type: 'line',
           smooth: true,
           name: 'Export'
+        },
+        {
+          data: this.global.dataJsonRenewable,
+          type: 'line',
+          smooth: true,
+          name: 'Renouvelable'
         }
       ]
     };
@@ -129,7 +135,7 @@ export class RequestPowerComponent implements OnInit {
             }
           },
           legend: {
-            data: ['Conso','Prod','Export']
+            data: ['Conso','Prod','Export','Renouvelable']
           },
           dataZoom: [
             {
@@ -144,19 +150,29 @@ export class RequestPowerComponent implements OnInit {
               data: this.global.dataJsonDemande,
               type: 'line',
               smooth: true,
-              name: 'Conso'
+              name: 'Conso',
+              color: 'blue'
             },
             {
               data: this.global.dataJsonProd,
               type: 'line',
               smooth: true,
-              name: 'Prod'
+              name: 'Prod',
+              color: 'orange'
             },
             {
               data: this.global.dataJsonExport,
               type: 'line',
               smooth: true,
-              name: 'Export'
+              name: 'Export',
+              color: 'red'
+            },
+            {
+              data: this.global.dataJsonRenewable,
+              type: 'line',
+              smooth: true,
+              name: 'Renouvelable',
+              color: 'green'
             }
           ]
         };
